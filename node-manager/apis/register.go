@@ -28,20 +28,22 @@ type HeartbeatRequest struct {
 	UsedSpace int64 `json:"usedSpace"`
 }
 
-type NodeManager struct {
+type NM struct {
 	model.NodeManager
 }
 
-func SetupRoutes(router *mux.Router, nm *NodeManager) {
+func SetupRoutes(router *mux.Router, nm *NM) {
 	// Node management endpoints
 	router.HandleFunc("/api/nodes", nm.RegisterNodeHandler).Methods("POST")
+	router.HandleFunc("/api/nodes/stats", nm.GetClusterStatsHandler).Methods("GET")
+	router.HandleFunc("/api/all/nodes", nm.GetAllNodesHandler).Methods("GET")
 
 	router.Use(loggingMiddleware)
 	router.Use(recoveryMiddleware)
 
 }
 
-func (nm *NodeManager) RegisterNodeHandler(w http.ResponseWriter, r *http.Request) {
+func (nm *NM) RegisterNodeHandler(w http.ResponseWriter, r *http.Request) {
 	var request NodeRegistrationRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -88,7 +90,7 @@ func (nm *NodeManager) RegisterNodeHandler(w http.ResponseWriter, r *http.Reques
 	})
 }
 
-func (nm *NodeManager) GetAllNodesHandler(w http.ResponseWriter, r *http.Request) {
+func (nm *NM) GetAllNodesHandler(w http.ResponseWriter, r *http.Request) {
 	nodes, err := nm.GetAllNodes()
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Failed to fetch nodes")
@@ -101,7 +103,7 @@ func (nm *NodeManager) GetAllNodesHandler(w http.ResponseWriter, r *http.Request
 	})
 }
 
-func (nm *NodeManager) GetClusterStatsHandler(w http.ResponseWriter, r *http.Request) {
+func (nm *NM) GetClusterStatsHandler(w http.ResponseWriter, r *http.Request) {
 	stats, err := nm.GetClusterStats()
 
 	if err != nil {
