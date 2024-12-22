@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -33,17 +34,49 @@ type Node struct {
 type NodeManager struct {
 	db          *gorm.DB
 	redisClient *redis.Client
-	nodes       map[string]*Node
+	Nodes       map[string]*Node
+	Lock        sync.Mutex
+	ipPool      []string
+	usedIPs     map[string]bool
+	ctx         context.Context
 }
 
-func (nm *NodeManager) RegisterNode(node *Node) error {
+func NewNodeManager(db *gorm.DB, redisClient *redis.Client) *NodeManager {
+	return &NodeManager{
+		db:          db,
+		redisClient: redisClient,
+		ctx:         context.Background(),
+	}
+}
+
+// ClusterManager manages the IP address pool
+func (cm *NodeManager) AllocateIP() (string, error) {
+	for _, ip := range cm.ipPool {
+		if !cm.usedIPs[ip] {
+			cm.usedIPs[ip] = true
+			return ip, nil
+		}
+	}
+	return "", fmt.Errorf("no available IPs")
+}
+
+// ReleaseIP releases an IP address back to the pool
+func (cm *NodeManager) ReleaseIP(ip string) {
+	cm.Lock.Lock()
+	defer cm.Lock.Unlock()
+	delete(cm.usedIPs, ip)
+}
+
+func (nm *NodeManager) CreateNode(node *Node) error {
 
 	if err := nm.db.Create(node).Error; err != nil {
+		nm.db.Rollback()
 		return fmt.Errorf("failed to store node in database: %v", err)
 	}
 
 	nodeJSON, err := json.Marshal(node)
 	if err != nil {
+		nm.db.Rollback()
 		return fmt.Errorf("failed to marshal node: %v", err)
 	}
 
@@ -52,17 +85,17 @@ func (nm *NodeManager) RegisterNode(node *Node) error {
 		nodeJSON,
 		24*time.Hour).Err()
 	if err != nil {
+		nm.db.Rollback()
 		return fmt.Errorf("failed to store node in Redis: %v", err)
 	}
 
-	// Store in memory
-	nm.nodes[node.ID] = node
-	return nil
+	return nm.db.Commit().Error
+
 }
 
 // UpdateNodeStatus updates the status of a node
 func (nm *NodeManager) UpdateNodeStatus(nodeID string, status NodeStatus) error {
-	node, exists := nm.nodes[nodeID]
+	node, exists := nm.Nodes[nodeID]
 	if !exists {
 		return fmt.Errorf("node not found: %s", nodeID)
 	}
@@ -72,12 +105,14 @@ func (nm *NodeManager) UpdateNodeStatus(nodeID string, status NodeStatus) error 
 
 	// Update in PostgreSQL
 	if err := nm.db.Save(node).Error; err != nil {
+		nm.db.Rollback()
 		return fmt.Errorf("failed to update node in database: %v", err)
 	}
 
 	// Update in Redis
 	nodeJSON, err := json.Marshal(node)
 	if err != nil {
+		nm.db.Rollback()
 		return fmt.Errorf("failed to marshal node: %v", err)
 	}
 
@@ -86,6 +121,7 @@ func (nm *NodeManager) UpdateNodeStatus(nodeID string, status NodeStatus) error 
 		nodeJSON,
 		24*time.Hour).Err()
 	if err != nil {
+		nm.db.Rollback()
 		return fmt.Errorf("failed to update node in Redis: %v", err)
 	}
 
@@ -94,7 +130,7 @@ func (nm *NodeManager) UpdateNodeStatus(nodeID string, status NodeStatus) error 
 
 // HandleHeartbeat processes a heartbeat from a node
 func (nm *NodeManager) HandleHeartbeat(nodeID string) error {
-	node, exists := nm.nodes[nodeID]
+	node, exists := nm.Nodes[nodeID]
 	if !exists {
 		return fmt.Errorf("node not found: %s", nodeID)
 	}
@@ -110,7 +146,7 @@ func (nm *NodeManager) MonitorNodes(timeout time.Duration) {
 	go func() {
 		for range ticker.C {
 			now := time.Now()
-			for _, node := range nm.nodes {
+			for _, node := range nm.Nodes {
 				if now.Sub(node.LastHeartbeat) > timeout {
 					log.Printf("Node %s missed heartbeat, marking as failed", node.ID)
 					err := nm.UpdateNodeStatus(node.ID, NodeStatusFailed)
@@ -124,18 +160,22 @@ func (nm *NodeManager) MonitorNodes(timeout time.Duration) {
 }
 
 // GetNodeStats returns current statistics about the node cluster
-func (nm *NodeManager) GetNodeStats() map[string]interface{} {
-	totalNodes := len(nm.nodes)
-	activeNodes := 0
-	totalCapacity := int64(0)
-	totalUsedSpace := int64(0)
+func (nm *NodeManager) GetClusterStats() (map[string]interface{}, error) {
+	var totalCapacity, totalUsedSpace int64
+	var activeNodes, totalNodes int64
 
-	for _, node := range nm.nodes {
-		if node.Status == NodeStatusActive {
-			activeNodes++
-			totalCapacity += node.Capacity
-			totalUsedSpace += node.UsedSpace
-		}
+	// Get aggregate statistics
+	err := nm.db.Model(&Node{}).
+		Select("COUNT(*) as total_nodes, "+
+			"SUM(capacity) as total_capacity, "+
+			"SUM(used_space) as total_used_space, "+
+			"COUNT(CASE WHEN status = ? THEN 1 END) as active_nodes",
+			NodeStatusActive).
+		Row().
+		Scan(&totalNodes, &totalCapacity, &totalUsedSpace, &activeNodes)
+
+	if err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{
@@ -143,36 +183,15 @@ func (nm *NodeManager) GetNodeStats() map[string]interface{} {
 		"activeNodes":    activeNodes,
 		"totalCapacity":  totalCapacity,
 		"totalUsedSpace": totalUsedSpace,
-	}
+		"usagePercent":   float64(totalUsedSpace) / float64(totalCapacity) * 100,
+	}, nil
+
 }
 
-// type Config struct {
-// 	PostgresURL      string
-// 	RedisURL         string
-// 	HeartbeatTimeout time.Duration
-// }
-
-// func DbConnect(config Config) (*NodeManager, error) {
-// 	// Initialize PostgreSQL connection
-// 	db, err := gorm.Open(postgres.Open(config.PostgresURL), &gorm.Config{})
-// 	if err != nil {
-// 		return nil, fmt.Errorf("failed to connect to database: %v", err)
-// 	}
-
-// 	// Auto-migrate the schema
-// 	err = db.AutoMigrate(&Node{})
-// 	if err != nil {
-// 		return nil, fmt.Errorf("failed to migrate database: %v", err)
-// 	}
-
-// 	// Initialize Redis client
-// 	redisClient := redis.NewClient(&redis.Options{
-// 		Addr: config.RedisURL,
-// 	})
-
-// 	return &NodeManager{
-// 		db:          db,
-// 		redisClient: redisClient,
-// 		nodes:       make(map[string]*Node),
-// 	}, nil
-// }
+func (ops *NodeManager) GetAllNodes() ([]Node, error) {
+	var nodes []Node
+	if err := ops.db.Find(&nodes).Error; err != nil {
+		return nil, err
+	}
+	return nodes, nil
+}
