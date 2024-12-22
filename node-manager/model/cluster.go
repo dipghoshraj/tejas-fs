@@ -7,7 +7,7 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-type Cluster struct {
+type ClusterManager struct {
 	nodes   map[string]*Node
 	lock    sync.Mutex
 	redis   *redis.Client
@@ -15,11 +15,11 @@ type Cluster struct {
 	usedIPs map[string]bool
 }
 
-func NewClusterManager(redisHost string, ipPool []string) *Cluster {
+func NewClusterManager(redisHost string, ipPool []string) *ClusterManager {
 	client := redis.NewClient(&redis.Options{
 		Addr: redisHost,
 	})
-	return &Cluster{
+	return &ClusterManager{
 		nodes:   make(map[string]*Node),
 		redis:   client,
 		ipPool:  ipPool,
@@ -28,7 +28,7 @@ func NewClusterManager(redisHost string, ipPool []string) *Cluster {
 }
 
 // AllocateIP assigns an IP address to a new node
-func (cm *Cluster) AllocateIP() (string, error) {
+func (cm *ClusterManager) AllocateIP() (string, error) {
 	for _, ip := range cm.ipPool {
 		if !cm.usedIPs[ip] {
 			cm.usedIPs[ip] = true
@@ -39,7 +39,7 @@ func (cm *Cluster) AllocateIP() (string, error) {
 }
 
 // ReleaseIP releases an IP address back to the pool
-func (cm *Cluster) ReleaseIP(ip string) {
+func (cm *ClusterManager) ReleaseIP(ip string) {
 	cm.lock.Lock()
 	defer cm.lock.Unlock()
 	delete(cm.usedIPs, ip)
