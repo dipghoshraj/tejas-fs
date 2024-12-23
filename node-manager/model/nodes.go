@@ -32,7 +32,7 @@ type Node struct {
 }
 
 type NodeManager struct {
-	db          *gorm.DB
+	DB          *gorm.DB
 	redisClient *redis.Client
 	Nodes       map[string]*Node
 	Lock        sync.Mutex
@@ -43,7 +43,7 @@ type NodeManager struct {
 
 func NewNodeManager(db *gorm.DB, redisClient *redis.Client) *NodeManager {
 	return &NodeManager{
-		db:          db,
+		DB:          db,
 		redisClient: redisClient,
 		ctx:         context.Background(),
 	}
@@ -69,14 +69,14 @@ func (cm *NodeManager) ReleaseIP(ip string) {
 
 func (nm *NodeManager) CreateNode(node *Node) error {
 
-	if err := nm.db.Create(node).Error; err != nil {
-		nm.db.Rollback()
+	if err := nm.DB.Create(node).Error; err != nil {
+		nm.DB.Rollback()
 		return fmt.Errorf("failed to store node in database: %v", err)
 	}
 
 	nodeJSON, err := json.Marshal(node)
 	if err != nil {
-		nm.db.Rollback()
+		nm.DB.Rollback()
 		return fmt.Errorf("failed to marshal node: %v", err)
 	}
 
@@ -85,11 +85,11 @@ func (nm *NodeManager) CreateNode(node *Node) error {
 		nodeJSON,
 		24*time.Hour).Err()
 	if err != nil {
-		nm.db.Rollback()
+		nm.DB.Rollback()
 		return fmt.Errorf("failed to store node in Redis: %v", err)
 	}
 
-	return nm.db.Commit().Error
+	return nm.DB.Commit().Error
 
 }
 
@@ -104,15 +104,15 @@ func (nm *NodeManager) UpdateNodeStatus(nodeID string, status NodeStatus) error 
 	node.UpdatedAt = time.Now()
 
 	// Update in PostgreSQL
-	if err := nm.db.Save(node).Error; err != nil {
-		nm.db.Rollback()
+	if err := nm.DB.Save(node).Error; err != nil {
+		nm.DB.Rollback()
 		return fmt.Errorf("failed to update node in database: %v", err)
 	}
 
 	// Update in Redis
 	nodeJSON, err := json.Marshal(node)
 	if err != nil {
-		nm.db.Rollback()
+		nm.DB.Rollback()
 		return fmt.Errorf("failed to marshal node: %v", err)
 	}
 
@@ -121,7 +121,7 @@ func (nm *NodeManager) UpdateNodeStatus(nodeID string, status NodeStatus) error 
 		nodeJSON,
 		24*time.Hour).Err()
 	if err != nil {
-		nm.db.Rollback()
+		nm.DB.Rollback()
 		return fmt.Errorf("failed to update node in Redis: %v", err)
 	}
 
@@ -165,7 +165,7 @@ func (nm *NodeManager) GetClusterStats() (map[string]interface{}, error) {
 	var activeNodes, totalNodes int64
 
 	// Get aggregate statistics
-	err := nm.db.Model(&Node{}).
+	err := nm.DB.Model(&Node{}).
 		Select("COUNT(*) as total_nodes, "+
 			"SUM(capacity) as total_capacity, "+
 			"SUM(used_space) as total_used_space, "+
@@ -190,7 +190,7 @@ func (nm *NodeManager) GetClusterStats() (map[string]interface{}, error) {
 
 func (ops *NodeManager) GetAllNodes() ([]Node, error) {
 	var nodes []Node
-	if err := ops.db.Find(&nodes).Error; err != nil {
+	if err := ops.DB.Find(&nodes).Error; err != nil {
 		return nil, err
 	}
 	return nodes, nil

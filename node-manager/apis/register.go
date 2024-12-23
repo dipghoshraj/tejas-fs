@@ -28,11 +28,11 @@ type HeartbeatRequest struct {
 	UsedSpace int64 `json:"usedSpace"`
 }
 
-type NM struct {
-	model.NodeManager
+type NMHandler struct {
+	NodeManager *model.NodeManager
 }
 
-func SetupRoutes(router *mux.Router, nm *NM) {
+func SetupRoutes(router *mux.Router, nm *NMHandler) {
 	// Node management endpoints
 	router.HandleFunc("/api/nodes", nm.RegisterNodeHandler).Methods("POST")
 	router.HandleFunc("/api/nodes/stats", nm.GetClusterStatsHandler).Methods("GET")
@@ -43,7 +43,11 @@ func SetupRoutes(router *mux.Router, nm *NM) {
 
 }
 
-func (nm *NM) RegisterNodeHandler(w http.ResponseWriter, r *http.Request) {
+func NewNMHandler(NodeManager *model.NodeManager) *NMHandler {
+	return &NMHandler{NodeManager: NodeManager}
+}
+
+func (nm *NMHandler) RegisterNodeHandler(w http.ResponseWriter, r *http.Request) {
 	var request NodeRegistrationRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -54,7 +58,7 @@ func (nm *NM) RegisterNodeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ip, err := nm.AllocateIP()
+	ip, err := nm.NodeManager.AllocateIP()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(APIResponse{
@@ -90,8 +94,8 @@ func (nm *NM) RegisterNodeHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (nm *NM) GetAllNodesHandler(w http.ResponseWriter, r *http.Request) {
-	nodes, err := nm.GetAllNodes()
+func (nm *NMHandler) GetAllNodesHandler(w http.ResponseWriter, r *http.Request) {
+	nodes, err := nm.NodeManager.GetAllNodes()
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Failed to fetch nodes")
 		return
@@ -103,9 +107,8 @@ func (nm *NM) GetAllNodesHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (nm *NM) GetClusterStatsHandler(w http.ResponseWriter, r *http.Request) {
-	stats, err := nm.GetClusterStats()
-
+func (nm *NMHandler) GetClusterStatsHandler(w http.ResponseWriter, r *http.Request) {
+	stats, err := nm.NodeManager.GetClusterStats()
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Failed to fetch nodes")
 		return

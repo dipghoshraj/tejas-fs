@@ -41,7 +41,7 @@ func loadConfig() (*Config, error) {
 		PostgresPort:     getEnv("POSTGRES_PORT", "5432"),
 		PostgresUser:     getEnv("POSTGRES_USER", "postgres"),
 		PostgresPassword: getEnv("POSTGRES_PASSWORD", ""),
-		PostgresDB:       getEnv("POSTGRES_DB", "dfs_nodes"),
+		PostgresDB:       getEnv("POSTGRES_DB", ""),
 		RedisHost:        getEnv("REDIS_HOST", "localhost"),
 		RedisPort:        getEnv("REDIS_PORT", "6379"),
 		RedisPassword:    getEnv("REDIS_PASSWORD", ""),
@@ -77,9 +77,9 @@ func initializeDB(config *Config) (*gorm.DB, error) {
 	}
 
 	// Run migrations
-	if err := db.AutoMigrate(&model.Node{}); err != nil {
-		return nil, fmt.Errorf("failed to run migrations: %v", err)
-	}
+	// if err := db.AutoMigrate(&model.Node{}); err != nil {
+	// 	return nil, fmt.Errorf("failed to run migrations: %v", err)
+	// }
 
 	// Get underlying SQL DB to set connection pool settings
 	sqlDB, err := db.DB()
@@ -114,7 +114,7 @@ func initializeRedis(config *Config) (*redis.Client, error) {
 	return redisClient, nil
 }
 
-func setupRouter(nodeManager *apis.NM) *mux.Router {
+func setupRouter(nodeManager *apis.NMHandler) *mux.Router {
 	router := mux.NewRouter()
 
 	// Setup routes
@@ -141,7 +141,7 @@ func gracefulShutdown(server *http.Server, nodeManager *model.NodeManager) {
 	}
 
 	// Close database connections
-	if sqlDB, err := nodeManager.db.DB(); err == nil {
+	if sqlDB, err := nodeManager.DB.DB(); err == nil {
 		sqlDB.Close()
 	}
 
@@ -177,9 +177,10 @@ func main() {
 
 	// Create node manager
 	nodeManager := model.NewNodeManager(db, redisClient)
+	nmHandler := apis.NewNMHandler(nodeManager)
 
 	// Setup router with middleware
-	router := setupRouter(nodeManager)
+	router := setupRouter(nmHandler)
 
 	// Start server
 	server := &http.Server{
