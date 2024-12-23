@@ -20,8 +20,7 @@ type APIResponse struct {
 }
 
 type NodeRegistrationRequest struct {
-	IP       string `json:"ip"`
-	Capacity int64  `json:"capacity"`
+	Capacity int64 `json:"capacity"`
 }
 
 type HeartbeatRequest struct {
@@ -40,7 +39,6 @@ func SetupRoutes(router *mux.Router, nm *NMHandler) {
 
 	router.Use(loggingMiddleware)
 	router.Use(recoveryMiddleware)
-
 }
 
 func NewNMHandler(NodeManager *model.NodeManager) *NMHandler {
@@ -69,9 +67,9 @@ func (nm *NMHandler) RegisterNodeHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	node := &model.Node{
-		ID:            fmt.Sprintf("node-%d", time.Now().Unix()),
+		ID:            fmt.Sprintf("%d", time.Now().Unix()),
 		IP:            ip,
-		Status:        model.NodeStatusActive,
+		Status:        model.NodeStatusPending,
 		Capacity:      request.Capacity,
 		UsedSpace:     0,
 		LastHeartbeat: time.Now(),
@@ -88,7 +86,7 @@ func (nm *NMHandler) RegisterNodeHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	json.NewEncoder(w).Encode(APIResponse{
+	respondWithJSON(w, http.StatusOK, APIResponse{
 		Success: true,
 		Data:    node,
 	})
@@ -106,6 +104,32 @@ func (nm *NMHandler) GetAllNodesHandler(w http.ResponseWriter, r *http.Request) 
 		Data:    nodes,
 	})
 }
+
+// GetClusterStatsHandler retrieves cluster statistics such as total nodes, total capacity,
+// used capacity, and free capacity. It returns an APIResponse containing the statistics
+// or an error message if the operation fails.
+//
+// Parameters:
+// - w: http.ResponseWriter to write the response.
+// - r: *http.Request containing the request data.
+//
+// Return:
+//   - Writes an APIResponse with the following structure:
+//     {
+//     "success": bool,
+//     "message": string,
+//     "data": {
+//     "totalNodes": int,
+//     "totalCapacity": int64,
+//     "usedCapacity": int64,
+//     "freeCapacity": int64,
+//     },
+//     "error": string,
+//     }
+//   - success: true if the operation is successful, false otherwise.
+//   - message: Contains an error message if success is false.
+//   - data: Contains the cluster statistics if success is true.
+//   - error: Contains an error message if success is false.
 
 func (nm *NMHandler) GetClusterStatsHandler(w http.ResponseWriter, r *http.Request) {
 	stats, err := nm.NodeManager.GetClusterStats()

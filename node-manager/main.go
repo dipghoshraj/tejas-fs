@@ -170,8 +170,10 @@ func main() {
 	}
 	defer redisClient.Close()
 
+	ipPool := "192.168.1.1/6"
+
 	// Create node manager
-	nodeManager := model.NewNodeManager(db, redisClient)
+	nodeManager := model.NewNodeManager(db, redisClient, ipPool)
 	nmHandler := apis.NewNMHandler(nodeManager)
 
 	// Setup router with middleware

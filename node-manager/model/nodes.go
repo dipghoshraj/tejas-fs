@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net"
 	"sync"
 	"time"
 
@@ -37,46 +38,81 @@ type NodeManager struct {
 	Nodes       map[string]*Node
 	Lock        sync.Mutex
 	ipPool      []string
-	usedIPs     map[string]bool
+	ipNet       *net.IPNet
 	ctx         context.Context
 }
 
-func NewNodeManager(db *gorm.DB, redisClient *redis.Client) *NodeManager {
+func incrementIP(ip net.IP) {
+	for j := len(ip) - 1; j >= 0; j-- {
+		ip[j]++
+		if ip[j] > 0 {
+			break
+		}
+	}
+}
+
+func NewNodeManager(db *gorm.DB, redisClient *redis.Client, ipPool string) *NodeManager {
+	ctx := context.Background()
+
+	if _, err := redisClient.Ping(ctx).Result(); err != nil {
+		return nil
+	}
+	ip, ipnet, err := net.ParseCIDR(ipPool)
+
+	if err != nil {
+		return nil
+	}
+
+	var ips []string
+	for ip := ip.Mask(ipnet.Mask); ipnet.Contains(ip); incrementIP(ip) {
+		ips = append(ips, ip.String())
+	}
+
 	return &NodeManager{
 		DB:          db,
 		redisClient: redisClient,
 		ctx:         context.Background(),
+		ipPool:      ips,
+		ipNet:       ipnet,
 	}
 }
 
 // ClusterManager manages the IP address pool
 func (cm *NodeManager) AllocateIP() (string, error) {
 	for _, ip := range cm.ipPool {
-		if !cm.usedIPs[ip] {
-			cm.usedIPs[ip] = true
+		key := fmt.Sprintf("ip:%s", ip)
+		// Use SETNX (SET if Not eXists) for atomic allocation
+		set, err := cm.redisClient.SetNX(cm.ctx, key, "used", 0).Result()
+		if err != nil {
+			log.Fatalf("failed to allocate IP in Redis: %v", err)
+			continue
+		}
+		if set { // If the key was set, it means the IP was free
 			return ip, nil
 		}
 	}
+
 	return "", fmt.Errorf("no available IPs")
 }
 
 // ReleaseIP releases an IP address back to the pool
-func (cm *NodeManager) ReleaseIP(ip string) {
-	cm.Lock.Lock()
-	defer cm.Lock.Unlock()
-	delete(cm.usedIPs, ip)
+func (cm *NodeManager) ReleaseIP(ip string) error {
+	key := fmt.Sprintf("ip:%s", ip)
+	err := cm.redisClient.Del(cm.ctx, key).Err()
+	return err
 }
 
 func (nm *NodeManager) CreateNode(node *Node) error {
+	tx := nm.DB.Begin()
 
-	if err := nm.DB.Create(node).Error; err != nil {
-		nm.DB.Rollback()
+	if err := tx.Create(node).Error; err != nil {
+		tx.Rollback()
 		return fmt.Errorf("failed to store node in database: %v", err)
 	}
 
 	nodeJSON, err := json.Marshal(node)
 	if err != nil {
-		nm.DB.Rollback()
+		tx.Rollback()
 		return fmt.Errorf("failed to marshal node: %v", err)
 	}
 
@@ -85,11 +121,11 @@ func (nm *NodeManager) CreateNode(node *Node) error {
 		nodeJSON,
 		24*time.Hour).Err()
 	if err != nil {
-		nm.DB.Rollback()
+		tx.Rollback()
 		return fmt.Errorf("failed to store node in Redis: %v", err)
 	}
 
-	return nm.DB.Commit().Error
+	return tx.Commit().Error
 
 }
 
