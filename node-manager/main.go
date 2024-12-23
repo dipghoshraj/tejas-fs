@@ -76,11 +76,6 @@ func initializeDB(config *Config) (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to connect to database after 5 attempts: %v", err)
 	}
 
-	// Run migrations
-	// if err := db.AutoMigrate(&model.Node{}); err != nil {
-	// 	return nil, fmt.Errorf("failed to run migrations: %v", err)
-	// }
-
 	// Get underlying SQL DB to set connection pool settings
 	sqlDB, err := db.DB()
 	if err != nil {
