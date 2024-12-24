@@ -109,6 +109,14 @@ func initializeRedis(config *Config) (*redis.Client, error) {
 	return redisClient, nil
 }
 
+func initializePortPool(rdb *redis.Client, start, end int) {
+	ctx := context.Background()
+	for i := start; i <= end; i++ {
+		rdb.SAdd(ctx, "available_ports", i)
+	}
+	fmt.Println("Port pool initialized")
+}
+
 func setupRouter(nodeManager *apis.NMHandler) *mux.Router {
 	router := mux.NewRouter()
 
@@ -171,6 +179,8 @@ func main() {
 	defer redisClient.Close()
 
 	ipPool := "192.168.1.1/6"
+
+	initializePortPool(redisClient, 8081, 8091)
 
 	// Create node manager
 	nodeManager := model.NewNodeManager(db, redisClient, ipPool)

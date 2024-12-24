@@ -199,13 +199,17 @@ func (nm *NodeManager) SpinUpContainer(nodeID string, volumName string, capacity
 		}
 	}
 
-	// dockerrun := exec.Command("docker", "run", "-d", "--name", nodeID, "--env", "NODE_ID", nodeID, "--env", "STORAGE_CAPACITY", strconv.FormatInt(capacity, 10), "-v", fmt.Sprintf("%s:/data", volumName), "dfs-node-image")
+	port, err := nm.AllocatePort(nm.redisClient)
+	if err != nil {
+		return fmt.Errorf("failed to port allocation: %v", err)
+	}
 
 	cmd := exec.Command("docker", "run", "-d",
 		"--name", nodeID,
 		"--env", fmt.Sprintf("NODE_ID=%s", nodeID),
 		"--env", fmt.Sprintf("STORAGE_CAPACITY=%s", strconv.FormatInt(capacity, 10)),
 		"-v", fmt.Sprintf("%s:/data", volumName),
+		"-p", fmt.Sprintf("%s:%s", port, "8080"),
 		"dfs-node-image")
 
 	fmt.Println("Executing command:", cmd.String())
@@ -234,6 +238,36 @@ func createVolume(volumeName string) error {
 	fmt.Println("volume created", string(output))
 	return nil
 }
+
+func (cm *NodeManager) AllocatePort(rdb *redis.Client) (string, error) {
+	deadline := time.Now().Add(20 * time.Second) // 20 seconds timeout
+	ctx := context.Background()
+
+	for {
+		port, err := rdb.SPop(ctx, "available_ports").Result()
+		if err == nil {
+			return port, nil
+		}
+
+		if time.Now().After(deadline) {
+			return "", fmt.Errorf("timeout reached, no available ports")
+		}
+
+		if err != redis.Nil {
+			return "", fmt.Errorf("error fetching port: %w", err)
+		}
+
+		fmt.Println("No available ports, retrying...")
+		time.Sleep(100 * time.Millisecond) // Small delay before retrying
+	}
+}
+
+// func releasePort(rdb *redis.Client, port int) {
+// 	ctx := context.Background()
+
+// 	rdb.SAdd(ctx, "available_ports", port)
+// 	fmt.Printf("Port %d released\n", port)
+// }
 
 // func incrementIP(ip net.IP) {
 // 	for j := len(ip) - 1; j >= 0; j-- {
