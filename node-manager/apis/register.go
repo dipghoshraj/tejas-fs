@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 
 	"github.com/dipghoshraj/media-service/node-manager/model"
@@ -56,19 +57,11 @@ func (nm *NMHandler) RegisterNodeHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	ip, err := nm.NodeManager.AllocateIP()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(APIResponse{
-			Success: false,
-			Error:   fmt.Sprintf("failed to allocate IP: %v", err),
-		})
-		return
-	}
+	volumnName := uuid.New().String()
 
 	node := &model.Node{
 		ID:            fmt.Sprintf("%d", time.Now().Unix()),
-		IP:            ip,
+		VolumeName:    volumnName,
 		Status:        model.NodeStatusPending,
 		Capacity:      request.Capacity,
 		UsedSpace:     0,

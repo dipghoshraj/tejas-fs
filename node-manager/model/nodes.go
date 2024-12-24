@@ -5,7 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"net"
+	"os/exec"
+	"strconv"
 	"sync"
 	"time"
 
@@ -23,13 +24,13 @@ const (
 
 type Node struct {
 	ID            string     `json:"id" gorm:"primaryKey"`
-	IP            string     `json:"ip"`
 	Status        NodeStatus `json:"status"`
 	Capacity      int64      `json:"capacity"`  // in bytes
 	UsedSpace     int64      `json:"usedSpace"` // in bytes
 	LastHeartbeat time.Time  `json:"lastHeartbeat"`
 	CreatedAt     time.Time  `json:"createdAt"`
 	UpdatedAt     time.Time  `json:"updatedAt"`
+	VolumeName    string     `json:"volumeName"`
 }
 
 type NodeManager struct {
@@ -37,18 +38,7 @@ type NodeManager struct {
 	redisClient *redis.Client
 	Nodes       map[string]*Node
 	Lock        sync.Mutex
-	ipPool      []string
-	ipNet       *net.IPNet
 	ctx         context.Context
-}
-
-func incrementIP(ip net.IP) {
-	for j := len(ip) - 1; j >= 0; j-- {
-		ip[j]++
-		if ip[j] > 0 {
-			break
-		}
-	}
 }
 
 func NewNodeManager(db *gorm.DB, redisClient *redis.Client, ipPool string) *NodeManager {
@@ -57,49 +47,12 @@ func NewNodeManager(db *gorm.DB, redisClient *redis.Client, ipPool string) *Node
 	if _, err := redisClient.Ping(ctx).Result(); err != nil {
 		return nil
 	}
-	ip, ipnet, err := net.ParseCIDR(ipPool)
-
-	if err != nil {
-		return nil
-	}
-
-	var ips []string
-	for ip := ip.Mask(ipnet.Mask); ipnet.Contains(ip); incrementIP(ip) {
-		ips = append(ips, ip.String())
-	}
 
 	return &NodeManager{
 		DB:          db,
 		redisClient: redisClient,
 		ctx:         context.Background(),
-		ipPool:      ips,
-		ipNet:       ipnet,
 	}
-}
-
-// ClusterManager manages the IP address pool
-func (cm *NodeManager) AllocateIP() (string, error) {
-	for _, ip := range cm.ipPool {
-		key := fmt.Sprintf("ip:%s", ip)
-		// Use SETNX (SET if Not eXists) for atomic allocation
-		set, err := cm.redisClient.SetNX(cm.ctx, key, "used", 0).Result()
-		if err != nil {
-			log.Fatalf("failed to allocate IP in Redis: %v", err)
-			continue
-		}
-		if set { // If the key was set, it means the IP was free
-			return ip, nil
-		}
-	}
-
-	return "", fmt.Errorf("no available IPs")
-}
-
-// ReleaseIP releases an IP address back to the pool
-func (cm *NodeManager) ReleaseIP(ip string) error {
-	key := fmt.Sprintf("ip:%s", ip)
-	err := cm.redisClient.Del(cm.ctx, key).Err()
-	return err
 }
 
 func (nm *NodeManager) CreateNode(node *Node) error {
@@ -123,6 +76,12 @@ func (nm *NodeManager) CreateNode(node *Node) error {
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("failed to store node in Redis: %v", err)
+	}
+
+	// SpinUpContainer
+	if err := nm.SpinUpContainer(node.ID, node.VolumeName, node.Capacity); err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to spin up the container: %v", err)
 	}
 
 	return tx.Commit().Error
@@ -231,3 +190,81 @@ func (ops *NodeManager) GetAllNodes() ([]Node, error) {
 	}
 	return nodes, nil
 }
+
+func (nm *NodeManager) SpinUpContainer(nodeID string, volumName string, capacity int64) error {
+
+	if !volumeExists(volumName) {
+		if err := createVolume(volumName); err != nil {
+			return fmt.Errorf("error creating volume: %v", err)
+		}
+	}
+
+	// dockerrun := exec.Command("docker", "run", "-d", "--name", nodeID, "--env", "NODE_ID", nodeID, "--env", "STORAGE_CAPACITY", strconv.FormatInt(capacity, 10), "-v", fmt.Sprintf("%s:/data", volumName), "dfs-node-image")
+
+	cmd := exec.Command("docker", "run", "-d",
+		"--name", nodeID,
+		"--env", fmt.Sprintf("NODE_ID=%s", nodeID),
+		"--env", fmt.Sprintf("STORAGE_CAPACITY=%s", strconv.FormatInt(capacity, 10)),
+		"-v", fmt.Sprintf("%s:/data", volumName),
+		"dfs-node-image")
+
+	fmt.Println("Executing command:", cmd.String())
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Println("Output:", string(output))
+		return fmt.Errorf("failed to run docker: %v", err)
+	}
+	fmt.Println("Container started:", string(output))
+	return nil
+}
+
+func volumeExists(volumeName string) bool {
+	cmd := exec.Command("docker", "volume", "inspect", volumeName)
+	err := cmd.Run()
+	return err == nil // If there is no error the volume exist
+}
+
+func createVolume(volumeName string) error {
+	cmd := exec.Command("docker", "volume", "create", volumeName)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("error creating volume: %w, output: %s", err, string(output))
+	}
+	fmt.Println("volume created", string(output))
+	return nil
+}
+
+// func incrementIP(ip net.IP) {
+// 	for j := len(ip) - 1; j >= 0; j-- {
+// 		ip[j]++
+// 		if ip[j] > 0 {
+// 			break
+// 		}
+// 	}
+// }
+
+// ClusterManager manages the IP address pool
+// func (cm *NodeManager) AllocateIP() (string, error) {
+// 	for _, ip := range cm.ipPool {
+// 		key := fmt.Sprintf("ip:%s", ip)
+// 		// Use SETNX (SET if Not eXists) for atomic allocation
+// 		set, err := cm.redisClient.SetNX(cm.ctx, key, "used", 0).Result()
+// 		if err != nil {
+// 			log.Fatalf("failed to allocate IP in Redis: %v", err)
+// 			continue
+// 		}
+// 		if set { // If the key was set, it means the IP was free
+// 			return ip, nil
+// 		}
+// 	}
+
+// 	return "", fmt.Errorf("no available IPs")
+// }
+
+// ReleaseIP releases an IP address back to the pool
+// func (cm *NodeManager) ReleaseIP(ip string) error {
+// 	key := fmt.Sprintf("ip:%s", ip)
+// 	err := cm.redisClient.Del(cm.ctx, key).Err()
+// 	return err
+// }
