@@ -12,3 +12,6 @@ DFS manages data storage across multiple nodes (servers), enabling scalability, 
 ## **Architecture Diagram**
 
 ![Alt text](ideation/manager-1734775891548.drawio.png)
+
+For documentation follow this
+https://dipghoshraj.atlassian.net/wiki/spaces/~62722c95f42962006fdf60f0/pages/98306/DFS+Media+Service
