@@ -126,7 +126,7 @@ func setupRouter(nodeManager *apis.NMHandler) *mux.Router {
 	return router
 }
 
-func gracefulShutdown(server *http.Server, nodeManager *model.NodeManager) {
+func gracefulShutdown(server *http.Server, nodeManager *model.DbManager) {
 	// Wait for interrupt signal
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)

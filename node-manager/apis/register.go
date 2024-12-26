@@ -29,7 +29,7 @@ type HeartbeatRequest struct {
 }
 
 type NMHandler struct {
-	NodeManager *model.NodeManager
+	DbManager *model.DbManager
 }
 
 func SetupRoutes(router *mux.Router, nm *NMHandler) {
@@ -42,8 +42,8 @@ func SetupRoutes(router *mux.Router, nm *NMHandler) {
 	router.Use(recoveryMiddleware)
 }
 
-func NewNMHandler(NodeManager *model.NodeManager) *NMHandler {
-	return &NMHandler{NodeManager: NodeManager}
+func NewNMHandler(NodeManager *model.DbManager) *NMHandler {
+	return &NMHandler{DbManager: NodeManager}
 }
 
 func (nm *NMHandler) RegisterNodeHandler(w http.ResponseWriter, r *http.Request) {
@@ -70,7 +70,7 @@ func (nm *NMHandler) RegisterNodeHandler(w http.ResponseWriter, r *http.Request)
 		UpdatedAt:     time.Now(),
 	}
 
-	if err := nm.NodeManager.CreateNode(node); err != nil {
+	if err := nm.DbManager.CreateNode(node); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(APIResponse{
 			Success: false,
@@ -86,7 +86,7 @@ func (nm *NMHandler) RegisterNodeHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (nm *NMHandler) GetAllNodesHandler(w http.ResponseWriter, r *http.Request) {
-	nodes, err := nm.NodeManager.GetAllNodes()
+	nodes, err := nm.DbManager.GetAllNodes()
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Failed to fetch nodes")
 		return
@@ -125,7 +125,7 @@ func (nm *NMHandler) GetAllNodesHandler(w http.ResponseWriter, r *http.Request) 
 //   - error: Contains an error message if success is false.
 
 func (nm *NMHandler) GetClusterStatsHandler(w http.ResponseWriter, r *http.Request) {
-	stats, err := nm.NodeManager.GetClusterStats()
+	stats, err := nm.DbManager.GetClusterStats()
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Failed to fetch nodes")
 		return
