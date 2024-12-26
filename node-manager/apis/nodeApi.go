@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -118,4 +120,35 @@ func (nm *NMHandler) GetClusterStatsHandler(w http.ResponseWriter, r *http.Reque
 		Success: true,
 		Data:    stats,
 	})
+}
+
+func chunkUpload(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseMultipartForm(10 << 20) // 10 MB limit for form data
+	if err != nil {
+		http.Error(w, "Unable to parse form", http.StatusBadRequest)
+		return
+	}
+
+	file, handler, err := r.FormFile("myFile")
+	if err != nil {
+		http.Error(w, "Unable to get file from form", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	filename := handler.Filename
+	ext := filepath.Ext(filename)
+	baseName := strings.TrimSuffix(filename, ext)
+
+	data := map[string]interface{}{
+		"filename": filename,
+		"baseName": baseName,
+		"ext":      ext,
+	}
+
+	respondWithJSON(w, http.StatusOK, APIResponse{
+		Success: true,
+		Data:    data,
+	})
+
 }
