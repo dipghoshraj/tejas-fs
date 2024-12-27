@@ -86,11 +86,17 @@ func (ndb *DBHandler) RegisterNode(node *model.Node) error {
 	}
 
 	// SpinUpContainer
-	if err := ndb.SpinUpContainer(node.ID, node.VolumeName, node.Capacity); err != nil {
+	port, err := ndb.SpinUpContainer(node.ID, node.VolumeName, node.Capacity)
+	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("failed to spin up the container: %v", err)
 	}
 
+	node.Port = port
+	if err := tx.Save(node).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to update node port: %v", err)
+	}
 	return tx.Commit().Error
 }
 
@@ -106,17 +112,17 @@ func (ndb *DBHandler) FindNode() (model.Node, error) {
 	return node, nil
 }
 
-func (ndb *DBHandler) SpinUpContainer(nodeID string, volumName string, capacity int64) error {
+func (ndb *DBHandler) SpinUpContainer(nodeID string, volumName string, capacity int64) (string, error) {
 
 	if !volumeExists(volumName) {
 		if err := createVolume(volumName); err != nil {
-			return fmt.Errorf("error creating volume: %v", err)
+			return "", fmt.Errorf("error creating volume: %v", err)
 		}
 	}
 
 	port, err := AllocatePort(ndb.DbManager.RedisClient)
 	if err != nil {
-		return fmt.Errorf("failed to port allocation: %v", err)
+		return "", fmt.Errorf("failed to port allocation: %v", err)
 	}
 
 	cmd := exec.Command("docker", "run", "-d",
@@ -132,10 +138,10 @@ func (ndb *DBHandler) SpinUpContainer(nodeID string, volumName string, capacity 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		fmt.Println("Output:", string(output))
-		return fmt.Errorf("failed to run docker: %v", err)
+		return "", fmt.Errorf("failed to run docker: %v", err)
 	}
 	fmt.Println("Container started:", string(output))
-	return nil
+	return port, nil
 }
 
 func (ndb *DBHandler) GetClusterStats() (map[string]interface{}, error) {

@@ -21,6 +21,7 @@ type Node struct {
 	CreatedAt     time.Time  `json:"createdAt"`
 	UpdatedAt     time.Time  `json:"updatedAt"`
 	VolumeName    string     `json:"volumeName"`
+	Port          string     `json:"port"`
 }
 
 // type NodeManager struct {
