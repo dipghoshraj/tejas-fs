@@ -12,6 +12,7 @@ import (
 	"net/http"
 
 	"github.com/dipghoshraj/media-service/node-manager/apis"
+	"github.com/dipghoshraj/media-service/node-manager/handler"
 	"github.com/dipghoshraj/media-service/node-manager/model"
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/mux"
@@ -184,7 +185,8 @@ func main() {
 
 	// Create node manager
 	nodeManager := model.NewNodeManager(db, redisClient, ipPool)
-	nmHandler := apis.NewNMHandler(nodeManager)
+	dbHandler := handler.NewDBHandler(nodeManager)
+	nmHandler := apis.NewNMHandler(dbHandler)
 
 	// Setup router with middleware
 	router := setupRouter(nmHandler)

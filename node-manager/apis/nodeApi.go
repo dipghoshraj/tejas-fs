@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/dipghoshraj/media-service/node-manager/handler"
 	"github.com/dipghoshraj/media-service/node-manager/model"
 )
 
@@ -28,7 +29,7 @@ type HeartbeatRequest struct {
 	UsedSpace int64 `json:"usedSpace"`
 }
 
-func NewNMHandler(NodeManager *model.DbManager) *NMHandler {
+func NewNMHandler(NodeManager *handler.DBHandler) *NMHandler {
 	return &NMHandler{DbManager: NodeManager}
 }
 
@@ -56,7 +57,7 @@ func (nm *NMHandler) RegisterNodeHandler(w http.ResponseWriter, r *http.Request)
 		UpdatedAt:     time.Now(),
 	}
 
-	if err := nm.DbManager.CreateNode(node); err != nil {
+	if err := nm.DbManager.RegisterNode(node); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(APIResponse{
 			Success: false,

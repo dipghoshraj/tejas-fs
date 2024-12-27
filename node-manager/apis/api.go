@@ -6,12 +6,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dipghoshraj/media-service/node-manager/model"
+	"github.com/dipghoshraj/media-service/node-manager/handler"
 	"github.com/gorilla/mux"
 )
 
 type NMHandler struct {
-	DbManager *model.DbManager
+	DbManager *handler.DBHandler
 }
 
 func SetupRoutes(router *mux.Router, nm *NMHandler) {

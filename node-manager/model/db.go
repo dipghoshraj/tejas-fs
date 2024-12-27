@@ -10,7 +10,7 @@ import (
 
 type DbManager struct {
 	DB          *gorm.DB
-	redisClient *redis.Client
+	RedisClient *redis.Client
 	Lock        sync.Mutex
 	ctx         context.Context
 }
@@ -24,7 +24,7 @@ func NewNodeManager(db *gorm.DB, redisClient *redis.Client, ipPool string) *DbMa
 
 	return &DbManager{
 		DB:          db,
-		redisClient: redisClient,
+		RedisClient: redisClient,
 		ctx:         context.Background(),
 	}
 }
