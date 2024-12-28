@@ -8,7 +8,8 @@ import (
 	"path/filepath"
 )
 
-const StorageDir = "../data"
+// volume stroage directory
+const StorageDir = "/data"
 
 func SaveChunk(w http.ResponseWriter, r *http.Request) {
 
