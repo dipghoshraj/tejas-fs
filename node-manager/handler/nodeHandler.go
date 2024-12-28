@@ -179,3 +179,12 @@ func (ndb *DBHandler) GetAllNodes() ([]model.Node, error) {
 	}
 	return nodes, nil
 }
+
+func (ndb *DBHandler) GetNodeByID(id string) (model.Node, error) {
+	var node model.Node
+
+	if err := ndb.DbManager.DB.Where("id = ?", id).First(&node).Error; err != nil {
+		return node, err
+	}
+	return node, nil
+}

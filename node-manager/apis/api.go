@@ -19,6 +19,7 @@ func SetupRoutes(router *mux.Router, nm *NMHandler) {
 	router.HandleFunc("/api/nodes", nm.RegisterNodeHandler).Methods("POST")
 	router.HandleFunc("/api/nodes/stats", nm.GetClusterStatsHandler).Methods("GET")
 	router.HandleFunc("/api/all/nodes", nm.GetAllNodesHandler).Methods("GET")
+	router.HandleFunc("/api/node", nm.GetNodeDetails).Methods("GET")
 
 	router.Use(loggingMiddleware)
 	router.Use(recoveryMiddleware)

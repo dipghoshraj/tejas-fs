@@ -44,6 +44,5 @@ func (ndb *DBHandler) PushEntryNode(file io.Reader, filename, fileID string) err
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("failed to upload file to Entry Node, status: %d", resp.StatusCode)
 	}
-
 	return nil
 }

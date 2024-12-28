@@ -160,6 +160,20 @@ func getEnv(key, defaultValue string) string {
 	return value
 }
 
+func PeriodicalHealthCheck(dbHandler handler.DBHandler) {
+	ticker := time.NewTicker(60 * time.Second)
+	defer ticker.Stop()
+
+	// 	// Start an infinite loop that calls the API every time the ticker ticks
+	for {
+		select {
+		case <-ticker.C:
+			// Call the API each time the ticker triggers
+			dbHandler.NodeHealth()
+		}
+	}
+}
+
 func main() {
 	// Initialize database connections
 	config, err := loadConfig()
@@ -208,7 +222,9 @@ func main() {
 		}
 	}()
 
-	// Setup graceful shutdown
-	gracefulShutdown(server, nodeManager)
+	go PeriodicalHealthCheck(*dbHandler)
 
+	// Setup graceful shutdown
+
+	gracefulShutdown(server, nodeManager)
 }

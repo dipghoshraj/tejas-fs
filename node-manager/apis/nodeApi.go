@@ -4,12 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
 
+	// "github.com/dipghosh
 	"github.com/dipghoshraj/media-service/node-manager/handler"
 	"github.com/dipghoshraj/media-service/node-manager/model"
 )
@@ -74,8 +73,9 @@ func (nm *NMHandler) RegisterNodeHandler(w http.ResponseWriter, r *http.Request)
 
 func (nm *NMHandler) GetAllNodesHandler(w http.ResponseWriter, r *http.Request) {
 	nodes, err := nm.DbManager.GetAllNodes()
+
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to fetch nodes")
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("failed to decode request: %v", err))
 		return
 	}
 
@@ -83,6 +83,21 @@ func (nm *NMHandler) GetAllNodesHandler(w http.ResponseWriter, r *http.Request) 
 		Success: true,
 		Data:    nodes,
 	})
+}
+
+func (nm *NMHandler) GetNodeDetails(w http.ResponseWriter, r *http.Request) {
+	fmt.Println(r.URL.Query())
+	node_id := r.URL.Query().Get("node_id")
+	if node_id == "" {
+		respondWithError(w, http.StatusInternalServerError, "")
+		return
+	}
+	node, err := nm.DbManager.GetNodeByID(node_id)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("failed to decode request: %v", err))
+		return
+	}
+	respondWithJSON(w, http.StatusOK, node)
 }
 
 // GetClusterStatsHandler retrieves cluster statistics such as total nodes, total capacity,
@@ -123,33 +138,33 @@ func (nm *NMHandler) GetClusterStatsHandler(w http.ResponseWriter, r *http.Reque
 	})
 }
 
-func chunkUpload(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseMultipartForm(10 << 20) // 10 MB limit for form data
-	if err != nil {
-		http.Error(w, "Unable to parse form", http.StatusBadRequest)
-		return
-	}
+// func chunkUpload(w http.ResponseWriter, r *http.Request) {
+// 	err := r.ParseMultipartForm(10 << 20) // 10 MB limit for form data
+// 	if err != nil {
+// 		http.Error(w, "Unable to parse form", http.StatusBadRequest)
+// 		return
+// 	}
 
-	file, handler, err := r.FormFile("myFile")
-	if err != nil {
-		http.Error(w, "Unable to get file from form", http.StatusBadRequest)
-		return
-	}
-	defer file.Close()
+// 	file, handler, err := r.FormFile("myFile")
+// 	if err != nil {
+// 		http.Error(w, "Unable to get file from form", http.StatusBadRequest)
+// 		return
+// 	}
+// 	defer file.Close()
 
-	filename := handler.Filename
-	ext := filepath.Ext(filename)
-	baseName := strings.TrimSuffix(filename, ext)
+// 	filename := handler.Filename
+// 	ext := filepath.Ext(filename)
+// 	baseName := strings.TrimSuffix(filename, ext)
 
-	data := map[string]interface{}{
-		"filename": filename,
-		"baseName": baseName,
-		"ext":      ext,
-	}
+// 	data := map[string]interface{}{
+// 		"filename": filename,
+// 		"baseName": baseName,
+// 		"ext":      ext,
+// 	}
 
-	respondWithJSON(w, http.StatusOK, APIResponse{
-		Success: true,
-		Data:    data,
-	})
+// 	respondWithJSON(w, http.StatusOK, APIResponse{
+// 		Success: true,
+// 		Data:    data,
+// 	})
 
-}
+// }
