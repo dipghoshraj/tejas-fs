@@ -25,16 +25,14 @@ func EntryPointStoreage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	file_id := r.FormValue("file_id")
-	file, handler, err := r.FormFile("datafile")
+	ext := r.FormValue("ext")
+	file, _, err := r.FormFile("datafile")
 
 	if err != nil {
 		http.Error(w, "Unable to get file from form", http.StatusBadRequest)
 		return
 	}
 	defer file.Close()
-
-	originalFilename := handler.Filename
-	ext := filepath.Ext(originalFilename)
 
 	newFileName := fmt.Sprintf("%s.%s", file_id, ext)
 	filePath := filepath.Join(StorageDir, newFileName)
