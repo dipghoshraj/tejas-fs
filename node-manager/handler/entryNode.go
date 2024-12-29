@@ -19,7 +19,28 @@ func (ndb *DBHandler) FindEntryPointNode() (*model.Node, error) {
 	return entrypoint, nil
 }
 
-func (ndb *DBHandler) PushEntryNode(file io.Reader, filename, fileID string) error {
+func (ndb *DBHandler) StoreEntryFile(file io.Reader, dataObject model.DataObject) error {
+	entrypoint, err := ndb.FindEntryPointNode()
+	if err != nil {
+		return fmt.Errorf("failed to find entry point node: %v", err)
+	}
+
+	dataObject.EntryNodeId = entrypoint.ID
+	tx := ndb.DbManager.DB.Begin()
+
+	if err := tx.Create(dataObject).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to create entry point %v", err)
+	}
+	err = ndb.PushEntryNode(file, dataObject.Ext, dataObject.ID)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to push entry point %v", err)
+	}
+	return nil
+}
+
+func (ndb *DBHandler) PushEntryNode(file io.Reader, ext string, fileID string) error {
 
 	entrypoint, err := ndb.FindEntryPointNode()
 	if err != nil {
@@ -33,8 +54,8 @@ func (ndb *DBHandler) PushEntryNode(file io.Reader, filename, fileID string) err
 	if err != nil {
 		return err
 	}
-	req.Header.Set("File-ID", fileID)
-	req.Header.Set("Filename", filename)
+	req.Header.Set("file_id", fileID)
+	req.Header.Set("ext", ext)
 
 	resp, err := client.Do(req)
 	if err != nil {

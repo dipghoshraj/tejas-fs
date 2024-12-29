@@ -1,10 +1,12 @@
 package model
 
-type object struct {
-	id            string
-	name          string
-	size          int64
-	totalChunks   int
-	entry_node_id string
-	distributed   bool
+type DataObject struct {
+	ID          string
+	Name        string
+	Size        int64
+	TotalChunks int
+	EntryNodeId string
+	Distributed bool
+	Ext         string
+	ReplicaId   string
 }
