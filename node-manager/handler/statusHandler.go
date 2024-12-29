@@ -42,8 +42,10 @@ func FetchStatusRequest(port string) (HealthResponse, error) {
 
 func (ndb *DBHandler) UpdateNode(response HealthResponse, node model.Node) error {
 	// result := db.Model(&User{}).Where("id = ?", userID).Updates(User{Name: newName, Email: newEmail})
+	log.Printf("updating %s with status %s space %d", node.ID, response.Status, response.UsedSpace)
 	result := ndb.DbManager.DB.Model(&model.Node{}).Where("id = ?", node.ID).Updates(model.Node{Status: model.NodeStatus(response.Status), UsedSpace: int64(response.UsedSpace)})
 	if result.Error != nil {
+		log.Printf("Error updating node %v", result.Error)
 		return result.Error
 	}
 	fmt.Printf("Rows affected: %v\n", result.RowsAffected)
@@ -64,6 +66,11 @@ func (ndb *DBHandler) NodeHealth() {
 		resp, err := FetchStatusRequest(node.Port)
 		if err != nil {
 			log.Printf("failed to get node status %s err %v", node.ID, err)
+		}
+
+		// standardisizing the usedSpace requirement
+		if resp.UsedSpace < 1 {
+			resp.UsedSpace = 1
 		}
 		err = ndb.UpdateNode(resp, node)
 		if err != nil {
