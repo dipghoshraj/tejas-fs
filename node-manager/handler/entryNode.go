@@ -1,8 +1,10 @@
 package handler
 
 import (
+	"bytes"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"time"
 
@@ -32,7 +34,7 @@ func (ndb *DBHandler) StoreEntryFile(file io.Reader, dataObject model.DataObject
 		tx.Rollback()
 		return fmt.Errorf("failed to create entry point %v", err)
 	}
-	err = ndb.PushEntryNode(file, dataObject.Ext, dataObject.ID)
+	err = ndb.RequestStore(file, dataObject.Ext, dataObject.ID)
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("failed to push entry point %v", err)
@@ -40,7 +42,25 @@ func (ndb *DBHandler) StoreEntryFile(file io.Reader, dataObject model.DataObject
 	return nil
 }
 
-func (ndb *DBHandler) PushEntryNode(file io.Reader, ext string, fileID string) error {
+func (ndb *DBHandler) RequestStore(file io.Reader, ext string, fileId string) error {
+	payload := &bytes.Buffer{}
+	writer := multipart.NewWriter(payload)
+	_ = writer.WriteField("file_id", fileId)
+	_ = writer.WriteField("ext", ext)
+
+	part3, errFile3 := writer.CreateFormFile("datafile", fileId)
+	if errFile3 != nil {
+		return fmt.Errorf("failed to create file payload %v", errFile3)
+	}
+	_, errFile3 = io.Copy(part3, file)
+
+	if errFile3 != nil {
+		return fmt.Errorf("failed to set file payload %v", errFile3)
+	}
+
+	if err := writer.Close(); err != nil {
+		return fmt.Errorf("failed to close writer %v", err)
+	}
 
 	entrypoint, err := ndb.FindEntryPointNode()
 	if err != nil {
@@ -50,17 +70,19 @@ func (ndb *DBHandler) PushEntryNode(file io.Reader, ext string, fileID string) e
 	// const entryNodeURL = "http://entry-node:8081/store" // Replace with your Entry Node URL
 	entryNodeURL := fmt.Sprintf("http://localhost:%s/store", entrypoint.Port)
 	client := &http.Client{Timeout: 10 * time.Second}
-	req, err := http.NewRequest("POST", entryNodeURL, file)
+
+	req, err := http.NewRequest("POST", entryNodeURL, payload)
+
 	if err != nil {
 		return err
 	}
-	req.Header.Set("file_id", fileID)
-	req.Header.Set("ext", ext)
 
+	req.Header.Set("Content-Type", writer.FormDataContentType())
 	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
+
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("failed to upload file to Entry Node, status: %d", resp.StatusCode)
