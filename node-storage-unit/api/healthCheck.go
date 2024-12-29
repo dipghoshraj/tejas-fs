@@ -96,6 +96,7 @@ func HealthCheck(w http.ResponseWriter, r *http.Request) {
 			Success: false,
 			Error:   fmt.Sprintf("failed to decode request: %v", err),
 		})
+		return
 	}
 	response := HealthCheckResponse{
 		Status:    "active",
