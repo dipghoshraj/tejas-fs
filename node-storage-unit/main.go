@@ -56,6 +56,7 @@ func main() {
 	router.HandleFunc("/upload", api.SaveChunk).Methods("POST")
 	router.HandleFunc("/fetch/{filename}", api.GetChunk).Methods("GET")
 	router.HandleFunc("/health", api.HealthCheck).Methods("GET")
+	router.HandleFunc("/store", api.EntryPointStoreage).Methods("POST")
 
 	log.Printf("Node %s running with storage limit %d MB at %s used space %d MB\n", node.ID, node.StorageLimit, node.StoragePath, node.StorageUsed)
 	log.Fatal(http.ListenAndServe(":8080", router))
