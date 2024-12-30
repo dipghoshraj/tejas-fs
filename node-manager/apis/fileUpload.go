@@ -54,6 +54,7 @@ func (nh *NMHandler) SaveFile(w http.ResponseWriter, r *http.Request) {
 		Ext:         ext,
 		Name:        originalFilename,
 		Distributed: false,
+		Size:        handler.Size,
 	}
 	dataObj, err = nh.DbManager.StoreEntryFile(file, dataObj)
 	if err != nil {
