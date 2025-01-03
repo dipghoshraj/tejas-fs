@@ -7,9 +7,10 @@ import (
 type NodeStatus string
 
 const (
-	NodeStatusActive  NodeStatus = "active"
-	NodeStatusFailed  NodeStatus = "failed"
-	NodeStatusPending NodeStatus = "pending"
+	NodeStatusActive   NodeStatus = "active"
+	NodeStatusFailed   NodeStatus = "failed"
+	NodeStatusPending  NodeStatus = "pending"
+	NodeStatusInactive NodeStatus = "inactive"
 )
 
 type Node struct {

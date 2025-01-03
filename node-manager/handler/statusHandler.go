@@ -65,6 +65,7 @@ func (ndb *DBHandler) NodeHealth() {
 		log.Printf("Healt check start for %s", node.ID)
 		resp, err := FetchStatusRequest(node.Port)
 		if err != nil {
+			resp.Status = "inactive"
 			log.Printf("failed to get node status %s err %v", node.ID, err)
 		}
 
