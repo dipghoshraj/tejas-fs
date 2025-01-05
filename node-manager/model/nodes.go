@@ -16,8 +16,8 @@ const (
 type Node struct {
 	ID            string     `json:"id" gorm:"primaryKey"`
 	Status        NodeStatus `json:"status"`
-	Capacity      int64      `json:"capacity"`  // in bytes
-	UsedSpace     int64      `json:"usedSpace"` // in bytes
+	Capacity      int64      `json:"capacity"`  // in MB
+	UsedSpace     int64      `json:"usedSpace"` // in MB
 	LastHeartbeat time.Time  `json:"lastHeartbeat"`
 	CreatedAt     time.Time  `json:"createdAt"`
 	UpdatedAt     time.Time  `json:"updatedAt"`
