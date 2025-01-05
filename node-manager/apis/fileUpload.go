@@ -23,14 +23,14 @@ import (
 //   writes an error message and sets the HTTP status code accordingly.
 
 type Response struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Size        int64  `json:"size"`
-	TotalChunks int    `json:"totalChunks"`
-	EntryNodeId string `json:"entryNodeId"`
-	Distributed bool   `json:"distributed"`
-	Ext         string `json:"ext"`
-	ReplicaId   string `json:"replicaId"`
+	ID            string `json:"id"`
+	Name          string `json:"name"`
+	Size          int64  `json:"size"`
+	TotalChunks   int    `json:"totalChunks"`
+	IngressNodeId string `json:"ingressNodeId"`
+	Distributed   bool   `json:"distributed"`
+	Ext           string `json:"ext"`
+	ReplicaId     string `json:"replicaId"`
 }
 
 func (nh *NMHandler) SaveFile(w http.ResponseWriter, r *http.Request) {
@@ -49,7 +49,7 @@ func (nh *NMHandler) SaveFile(w http.ResponseWriter, r *http.Request) {
 	originalFilename := handler.Filename
 	ext := filepath.Ext(originalFilename)
 
-	dataObj := model.DataObject{
+	dataObj := model.Orbs{
 		ID:          uuid.New().String(),
 		Ext:         ext,
 		Name:        originalFilename,
@@ -63,13 +63,12 @@ func (nh *NMHandler) SaveFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondWithJSON(w, http.StatusOK, Response{
-		ID:          dataObj.ID,
-		Name:        dataObj.Name,
-		EntryNodeId: dataObj.EntryNodeId,
-		ReplicaId:   dataObj.ReplicaId,
-		Ext:         dataObj.Ext,
-		TotalChunks: dataObj.TotalChunks,
-		Size:        dataObj.Size,
-		Distributed: dataObj.Distributed,
+		ID:            dataObj.ID,
+		Name:          dataObj.Name,
+		IngressNodeId: dataObj.IngressNodeId,
+		Ext:           dataObj.Ext,
+		TotalChunks:   dataObj.TotalChunks,
+		Size:          dataObj.Size,
+		Distributed:   dataObj.Distributed,
 	})
 }

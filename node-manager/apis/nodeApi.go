@@ -46,7 +46,7 @@ func (nm *NMHandler) RegisterNodeHandler(w http.ResponseWriter, r *http.Request)
 	volumnName := uuid.New().String()
 
 	node := &model.Node{
-		ID:            fmt.Sprintf("%d", time.Now().Unix()),
+		ID:            uuid.New().String(),
 		VolumeName:    volumnName,
 		Status:        model.NodeStatusPending,
 		Capacity:      request.Capacity,

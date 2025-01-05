@@ -11,7 +11,7 @@ import (
 	"github.com/dipghoshraj/media-service/node-manager/model"
 )
 
-func (ndb *DBHandler) FindEntryPointNode() (*model.Node, error) {
+func (ndb *DBHandler) FindIngressNode() (*model.Node, error) {
 
 	var entrypoint *model.Node
 	result := ndb.DbManager.DB.Where("status = ? and capacity - used_space >= ?", "active", 5).Order("capacity - used_space DESC").First(&entrypoint)
@@ -21,32 +21,32 @@ func (ndb *DBHandler) FindEntryPointNode() (*model.Node, error) {
 	return entrypoint, nil
 }
 
-func (ndb *DBHandler) StoreEntryFile(file io.Reader, dataObject model.DataObject) (model.DataObject, error) {
+func (ndb *DBHandler) StoreEntryFile(file io.Reader, orb model.Orbs) (model.Orbs, error) {
 
-	entrypoint, err := ndb.FindEntryPointNode()
+	ingressNode, err := ndb.FindIngressNode()
 	if err != nil {
-		return dataObject, fmt.Errorf("failed to find entry point node: %v", err)
+		return orb, fmt.Errorf("failed to find entry point node: %v", err)
 	}
 
-	dataObject.EntryNodeId = entrypoint.ID
+	orb.IngressNodeId = ingressNode.ID
 	tx := ndb.DbManager.DB.Begin()
-	fmt.Println(dataObject)
+	fmt.Println(orb)
 
-	if err := tx.Create(dataObject).Error; err != nil {
+	if err := tx.Create(orb).Error; err != nil {
 		tx.Rollback()
-		return dataObject, fmt.Errorf("failed to create entry point %v", err)
+		return orb, fmt.Errorf("failed to create entry point %v", err)
 	}
 
-	err = ndb.RequestStore(file, dataObject.Ext, dataObject.ID)
+	err = ndb.RequestStore(file, orb.Ext, orb.ID, ingressNode.Port)
 	if err != nil {
 		tx.Rollback()
-		return dataObject, fmt.Errorf("failed to push entry point %v", err)
+		return orb, fmt.Errorf("failed to push entry point %v", err)
 	}
 
-	return dataObject, tx.Commit().Error
+	return orb, tx.Commit().Error
 }
 
-func (ndb *DBHandler) RequestStore(file io.Reader, ext string, fileId string) error {
+func (ndb *DBHandler) RequestStore(file io.Reader, ext string, fileId string, ingressPort string) error {
 	payload := &bytes.Buffer{}
 	writer := multipart.NewWriter(payload)
 	_ = writer.WriteField("file_id", fileId)
@@ -66,13 +66,7 @@ func (ndb *DBHandler) RequestStore(file io.Reader, ext string, fileId string) er
 		return fmt.Errorf("failed to close writer %v", err)
 	}
 
-	entrypoint, err := ndb.FindEntryPointNode()
-	if err != nil {
-		return fmt.Errorf("failed to find entry point node: %v", err)
-	}
-
-	// const entryNodeURL = "http://entry-node:8081/store" // Replace with your Entry Node URL
-	entryNodeURL := fmt.Sprintf("http://localhost:%s/store", entrypoint.Port)
+	entryNodeURL := fmt.Sprintf("http://localhost:%s/store", ingressPort)
 	client := &http.Client{Timeout: 10 * time.Second}
 
 	req, err := http.NewRequest("POST", entryNodeURL, payload)

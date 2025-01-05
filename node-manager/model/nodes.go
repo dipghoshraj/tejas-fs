@@ -24,10 +24,3 @@ type Node struct {
 	VolumeName    string     `json:"volumeName"`
 	Port          string     `json:"port"`
 }
-
-// type NodeManager struct {
-// 	DB          *gorm.DB
-// 	redisClient *redis.Client
-// 	Lock        sync.Mutex
-// 	ctx         context.Context
-// }
