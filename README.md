@@ -11,11 +11,5 @@ DFS manages data storage across multiple nodes (servers), enabling scalability, 
 
 ## **Architecture Diagram**
 
-![Alt text](ideation/manager-1734775891548.drawio.png)
-
-## **Documentation**
-
-
-For documentation follow this
-[git book ideation documentation
-](https://dipghoshraj.gitbook.io/dipghoshraj-docs/media-service)
+**Architecture and all other Documents have been moved to [git book ideation documentation
+](https://dipghoshraj.gitbook.io/dipghoshraj-docs/media-service)**
