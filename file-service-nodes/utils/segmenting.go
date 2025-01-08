@@ -41,3 +41,24 @@ func WriteSegmentFile(filePath string, outputDir string) ([]string, error) {
 
 	return segments, nil
 }
+
+// func DistributeChunk(nodeAddress string, chunkID string, chunkData []byte) error {
+// 	conn, err := grpc.Dial(nodeAddress, grpc.WithInsecure())
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer conn.Close()
+
+// 	client := proto.NewStorageServiceClient(conn)
+
+// 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+// 	defer cancel()
+
+// 	req := &proto.DistributeRequest{
+// 		ChunkId:   chunkID,
+// 		ChunkData: chunkData,
+// 	}
+
+// 	_, err = client.DistributeChunk(ctx, req)
+// 	return err
+// }

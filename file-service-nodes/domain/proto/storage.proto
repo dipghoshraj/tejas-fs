@@ -1,0 +1,30 @@
+syntax="proto3";
+
+option go_package = "domain/proto/storage.proto;proto";
+
+
+package storage;
+
+service storageBox {
+    rpc SayHello (HelloWorld) returns (HelloReply);
+}
+
+message HelloWorld {
+      string name = 1;
+}
+
+message HelloReply {
+  string message = 1;
+}
+
+
+message IngressStorageMessage {
+    bytes orb = 1;
+}
+
+message IngressStorageResponse {
+    string ID = 1;
+    string Name= 2;
+    string Size= 3;
+    string IngressNodeId =4;
+}
