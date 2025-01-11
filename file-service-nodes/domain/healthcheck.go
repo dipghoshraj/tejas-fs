@@ -12,10 +12,6 @@ import (
 	"github.com/dipghoshraj/media-service/file-service-nodes/domain/proto"
 )
 
-type StorageServer struct {
-	proto.UnimplementedStorageBoxServer
-}
-
 func convertSizeToMB(size string) (int64, error) {
 	// Define regex to match size values with units (e.g., 1.5G, 500M, 1024K)
 	re := regexp.MustCompile(`([0-9.]+)([KMG]?)`)
