@@ -13,3 +13,5 @@ DFS manages data storage across multiple nodes (servers), enabling scalability, 
 
 **Architecture and all other Documents have been moved to [git book ideation documentation
 ](https://dipghoshraj.gitbook.io/dipghoshraj-docs/media-service)**
+
+<!-- protoc --go-grpc_out=. --go-grpc_opt=paths=source_relative file-service-nodes\domain\proto\storage.proto -->
