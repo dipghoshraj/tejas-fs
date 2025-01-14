@@ -28,7 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type StorageBoxClient interface {
 	HealthCheck(ctx context.Context, in *HealthCheckMessage, opts ...grpc.CallOption) (*HelloReply, error)
-	IngressNode(ctx context.Context, in *IngressStorageMessage, opts ...grpc.CallOption) (*IngressStorageResponse, error)
+	IngressNode(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[IngressStorageMessage, IngressStorageResponse], error)
 }
 
 type storageBoxClient struct {
@@ -49,22 +49,25 @@ func (c *storageBoxClient) HealthCheck(ctx context.Context, in *HealthCheckMessa
 	return out, nil
 }
 
-func (c *storageBoxClient) IngressNode(ctx context.Context, in *IngressStorageMessage, opts ...grpc.CallOption) (*IngressStorageResponse, error) {
+func (c *storageBoxClient) IngressNode(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[IngressStorageMessage, IngressStorageResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(IngressStorageResponse)
-	err := c.cc.Invoke(ctx, StorageBox_IngressNode_FullMethodName, in, out, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &StorageBox_ServiceDesc.Streams[0], StorageBox_IngressNode_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &grpc.GenericClientStream[IngressStorageMessage, IngressStorageResponse]{ClientStream: stream}
+	return x, nil
 }
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type StorageBox_IngressNodeClient = grpc.ClientStreamingClient[IngressStorageMessage, IngressStorageResponse]
 
 // StorageBoxServer is the server API for StorageBox service.
 // All implementations must embed UnimplementedStorageBoxServer
 // for forward compatibility.
 type StorageBoxServer interface {
 	HealthCheck(context.Context, *HealthCheckMessage) (*HelloReply, error)
-	IngressNode(context.Context, *IngressStorageMessage) (*IngressStorageResponse, error)
+	IngressNode(grpc.ClientStreamingServer[IngressStorageMessage, IngressStorageResponse]) error
 	mustEmbedUnimplementedStorageBoxServer()
 }
 
@@ -78,8 +81,8 @@ type UnimplementedStorageBoxServer struct{}
 func (UnimplementedStorageBoxServer) HealthCheck(context.Context, *HealthCheckMessage) (*HelloReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method HealthCheck not implemented")
 }
-func (UnimplementedStorageBoxServer) IngressNode(context.Context, *IngressStorageMessage) (*IngressStorageResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method IngressNode not implemented")
+func (UnimplementedStorageBoxServer) IngressNode(grpc.ClientStreamingServer[IngressStorageMessage, IngressStorageResponse]) error {
+	return status.Errorf(codes.Unimplemented, "method IngressNode not implemented")
 }
 func (UnimplementedStorageBoxServer) mustEmbedUnimplementedStorageBoxServer() {}
 func (UnimplementedStorageBoxServer) testEmbeddedByValue()                    {}
@@ -120,23 +123,12 @@ func _StorageBox_HealthCheck_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
-func _StorageBox_IngressNode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(IngressStorageMessage)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(StorageBoxServer).IngressNode(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: StorageBox_IngressNode_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StorageBoxServer).IngressNode(ctx, req.(*IngressStorageMessage))
-	}
-	return interceptor(ctx, in, info, handler)
+func _StorageBox_IngressNode_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(StorageBoxServer).IngressNode(&grpc.GenericServerStream[IngressStorageMessage, IngressStorageResponse]{ServerStream: stream})
 }
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type StorageBox_IngressNodeServer = grpc.ClientStreamingServer[IngressStorageMessage, IngressStorageResponse]
 
 // StorageBox_ServiceDesc is the grpc.ServiceDesc for StorageBox service.
 // It's only intended for direct use with grpc.RegisterService,
@@ -149,11 +141,13 @@ var StorageBox_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "HealthCheck",
 			Handler:    _StorageBox_HealthCheck_Handler,
 		},
+	},
+	Streams: []grpc.StreamDesc{
 		{
-			MethodName: "IngressNode",
-			Handler:    _StorageBox_IngressNode_Handler,
+			StreamName:    "IngressNode",
+			Handler:       _StorageBox_IngressNode_Handler,
+			ClientStreams: true,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
 	Metadata: "file-service-nodes/domain/proto/storage.proto",
 }

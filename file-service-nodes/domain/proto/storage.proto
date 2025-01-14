@@ -7,7 +7,7 @@ package storage;
 
 service storageBox {
     rpc HealthCheck (HealthCheckMessage) returns (HelloReply);
-    rpc IngressNode (IngressStorageMessage) returns (IngressStorageResponse);
+    rpc IngressNode ( stream IngressStorageMessage) returns (IngressStorageResponse);
 }
 
 message HealthCheckMessage {
@@ -20,7 +20,8 @@ message HelloReply {
 
 
 message IngressStorageMessage {
-    bytes orb = 1;
+    string filename = 1;
+    bytes orb = 2;
 }
 
 message IngressStorageResponse {
