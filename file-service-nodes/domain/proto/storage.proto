@@ -20,7 +20,6 @@ message HelloReply {
 
 
 message IngressStorageMessage {
-    string filename = 1;
     bytes orb = 2;
 }
 

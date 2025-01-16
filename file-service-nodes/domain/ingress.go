@@ -6,31 +6,31 @@ import (
 	"os"
 
 	"github.com/dipghoshraj/media-service/file-service-nodes/domain/proto"
-	// pb "github.com/dipghoshraj/media-service/file-service-nodes/domain/proto"
+	"github.com/google/uuid"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
 )
 
 func (s *StorageServer) IngressNode(stream grpc.ClientStreamingServer[proto.IngressStorageMessage, proto.IngressStorageResponse]) error {
 
 	// file :=
 	var file *os.File
-	// fileID := uuid.New().String()
+	fileID := uuid.New().String()
+	fmt.Println("stat processing")
 
-	// defer func() {
-	// 	if err := file.Close(); err != nil {
-	// 		fmt.Errorf("%", err)
-	// 	}
-	// }()
+	defer func() {
+		if err := file.Close(); err != nil {
+			fmt.Printf("%v", err)
+		}
+	}()
 
 	for {
 		segment, err := stream.Recv()
 
-		md, ok := metadata.FromIncomingContext(stream.Context())
-		if !ok {
-			return fmt.Errorf("%v", err)
-		}
-		filename := md.Get("filename")[0]
+		// md, ok := metadata.FromIncomingContext(stream.Context())
+		// if !ok {
+		// 	return fmt.Errorf("%v", err)
+		// }
+		filename := fileID
 
 		if err != nil {
 			return fmt.Errorf("%v", err)
@@ -47,14 +47,16 @@ func (s *StorageServer) IngressNode(stream grpc.ClientStreamingServer[proto.Ingr
 			// TODO : Intialize Orbs here
 			file, err = os.Create(filename)
 			if err != nil {
+				file.Close()
 				return fmt.Errorf("%v", err)
 			}
 		}
 
 		_, err = file.Write(segment.GetOrb())
-		fmt.Println("file chunk size %w", len(segment.GetOrb()))
+		fmt.Printf("file chunk size %d", len(segment.GetOrb()))
 
 		if err != nil {
+			file.Close()
 			return fmt.Errorf("%v", err)
 		}
 	}
