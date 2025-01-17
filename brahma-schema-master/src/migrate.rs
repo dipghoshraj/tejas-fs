@@ -4,7 +4,7 @@ use std::fs;  // Synchronous file handling from std
 
 
 fn get_migration_file_path(file_name:  &mut String) -> String {
-    format!("migrations/{}.sql", file_name)  // Returns the full path to the SQL file
+    format!("saraswati-knowledge-schema/{}.sql", file_name)  // Returns the full path to the SQL file
 }
 
 
