@@ -1,10 +1,10 @@
-package entities
+package cosmicmodel
 
-type Orbs struct {
+type Granths struct {
 	ID            string
 	Name          string
 	Size          int64
-	TotalChunks   int
+	TotalSegments int
 	IngressNodeId string
 	Distributed   bool
 	Ext           string

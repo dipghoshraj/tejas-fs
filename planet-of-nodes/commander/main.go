@@ -1,12 +1,14 @@
-package infrastructure
+package main
 
 import (
+	"fmt"
+	"log"
 	"os"
 
 	"github.com/joho/godotenv"
 )
 
-type Infrastructure struct {
+type Config struct {
 	PostgresHost     string
 	PostgresPort     string
 	PostgresUser     string
@@ -26,11 +28,11 @@ func getEnv(key, defaultValue string) string {
 	return value
 }
 
-func LoadInfra() (*Infrastructure, error) {
+func loadConfig() (*Config, error) {
 	// Load .env file if it exists
 	godotenv.Load()
 
-	config := &Infrastructure{
+	config := &Config{
 		PostgresHost:     getEnv("POSTGRES_HOST", "localhost"),
 		PostgresPort:     getEnv("POSTGRES_PORT", "5432"),
 		PostgresUser:     getEnv("POSTGRES_USER", "postgres"),
@@ -43,4 +45,14 @@ func LoadInfra() (*Infrastructure, error) {
 	}
 
 	return config, nil
+}
+
+func main() {
+	fmt.Println("here starts the creation")
+
+	config, err := loadConfig()
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
+	fmt.Println(config)
 }

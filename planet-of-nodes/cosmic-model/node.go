@@ -1,8 +1,6 @@
-package model
+package cosmicmodel
 
-import (
-	"time"
-)
+import "time"
 
 type NodeStatus string
 
@@ -13,7 +11,7 @@ const (
 	NodeStatusInactive NodeStatus = "inactive"
 )
 
-type Node struct {
+type LokaNode struct {
 	ID            string     `json:"id" gorm:"primaryKey"`
 	Status        NodeStatus `json:"status"`
 	Capacity      int64      `json:"capacity"`  // in MB
@@ -23,4 +21,5 @@ type Node struct {
 	UpdatedAt     time.Time  `json:"updatedAt"`
 	VolumeName    string     `json:"volumeName"`
 	Port          string     `json:"port"`
+	Host          string     `json:"host"`
 }

@@ -1,4 +1,4 @@
-package entities
+package cosmicmodel
 
 import "time"
 
