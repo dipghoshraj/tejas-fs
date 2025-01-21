@@ -11,7 +11,7 @@ const (
 	NodeStatusInactive NodeStatus = "inactive"
 )
 
-type LokaNode struct {
+type Node struct {
 	ID            string     `json:"id" gorm:"primaryKey"`
 	Status        NodeStatus `json:"status"`
 	Capacity      int64      `json:"capacity"`  // in MB
