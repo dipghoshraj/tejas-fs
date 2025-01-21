@@ -171,3 +171,5 @@ cython_debug/
 .pypirc
 
 nameing.txt
+test/before.jpeg
+test/index.html
