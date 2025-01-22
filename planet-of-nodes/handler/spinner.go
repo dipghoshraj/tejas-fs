@@ -6,14 +6,6 @@ import (
 	nodeunit "planet-of-node/node-unit"
 )
 
-type NodeStatus string
-
-const (
-	NodeStatusActive  NodeStatus = "active"
-	NodeStatusFailed  NodeStatus = "failed"
-	NodeStatusPending NodeStatus = "pending"
-)
-
 func (hm *hManager) SpinUpContainer(node *cosmicmodel.Node) error {
 	// start the transcation operation
 	tx := hm.dbm.DB.Begin()
@@ -30,6 +22,7 @@ func (hm *hManager) SpinUpContainer(node *cosmicmodel.Node) error {
 	}
 
 	node.Port = port
+	node.Status = cosmicmodel.NodeStatusActive
 
 	if err := nodeunit.SpinUpContainer(node.ID, node.VolumeName, node.Capacity, node.Port); err != nil {
 		tx.Rollback()
@@ -42,4 +35,12 @@ func (hm *hManager) SpinUpContainer(node *cosmicmodel.Node) error {
 	}
 
 	return nil
+}
+
+func (hm *hManager) GetAllNodes() ([]cosmicmodel.Node, error) {
+	var nodes []cosmicmodel.Node
+	if err := hm.dbm.DB.Find(&nodes).Error; err != nil {
+		return nil, err
+	}
+	return nodes, nil
 }
