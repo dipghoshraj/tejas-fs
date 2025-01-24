@@ -17,5 +17,4 @@ func (na *NApi) CreateCluster(w http.ResponseWriter, r *http.Request) {
 		Success: true,
 		Data:    Response{},
 	})
-
 }

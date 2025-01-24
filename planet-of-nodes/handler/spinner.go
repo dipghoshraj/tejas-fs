@@ -44,3 +44,7 @@ func (hm *HManager) GetAllNodes() ([]cosmicmodel.Node, error) {
 	}
 	return nodes, nil
 }
+
+func (hm *HManager) CreateNodesCluster() {
+
+}
