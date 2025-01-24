@@ -4,7 +4,7 @@ import (
 	cosmicmodel "planet-of-node/cosmic-model"
 )
 
-func (hm *hManager) GetClusterStats() (map[string]interface{}, error) {
+func (hm *HManager) GetClusterStats() (map[string]interface{}, error) {
 	var totalCapacity, totalUsedSpace int64
 	var activeNodes, totalNodes int64
 

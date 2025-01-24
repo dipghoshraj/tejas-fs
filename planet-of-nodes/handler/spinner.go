@@ -6,7 +6,7 @@ import (
 	nodeunit "planet-of-node/node-unit"
 )
 
-func (hm *hManager) SpinUpContainer(node *cosmicmodel.Node) error {
+func (hm *HManager) SpinUpContainer(node *cosmicmodel.Node) error {
 	// start the transcation operation
 	tx := hm.dbm.DB.Begin()
 	// crate the node metadata in theDB
@@ -37,7 +37,7 @@ func (hm *hManager) SpinUpContainer(node *cosmicmodel.Node) error {
 	return nil
 }
 
-func (hm *hManager) GetAllNodes() ([]cosmicmodel.Node, error) {
+func (hm *HManager) GetAllNodes() ([]cosmicmodel.Node, error) {
 	var nodes []cosmicmodel.Node
 	if err := hm.dbm.DB.Find(&nodes).Error; err != nil {
 		return nil, err
