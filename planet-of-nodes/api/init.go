@@ -14,6 +14,10 @@ type NApi struct {
 	nhm *handlers.HManager
 }
 
+func ApiHandler(hm *handlers.HManager) *NApi {
+	return &NApi{nhm: hm}
+}
+
 type APIResponse struct {
 	Success bool        `json:"success"`
 	Message string      `json:"message,omitempty"`
@@ -21,7 +25,7 @@ type APIResponse struct {
 	Error   string      `json:"error,omitempty"`
 }
 
-func setUpRouter(router *mux.Router, napi *NApi) {
+func SetUpRouter(router *mux.Router, napi *NApi) {
 	router.Use(loggingMiddleware)
 	router.HandleFunc("/cluster", napi.CreateCluster).Methods("POST")
 }
