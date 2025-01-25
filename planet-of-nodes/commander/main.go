@@ -1,12 +1,20 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
+	"time"
 
+	"planet-of-node/api"
+	cosmicmodel "planet-of-node/cosmic-model"
+	"planet-of-node/handler"
 	nodeunt "planet-of-node/node-unit"
 
+	"github.com/go-redis/redis/v8"
+	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 )
 
@@ -37,6 +45,20 @@ func loadConfig() (*nodeunt.Config, error) {
 	return config, nil
 }
 
+func setupRouter(apiManager *api.NApi) *mux.Router {
+	router := mux.NewRouter()
+	api.SetUpRouter(router, apiManager)
+	return router
+}
+
+func initializePortPool(rdb *redis.Client, start, end int) {
+	ctx := context.Background()
+	for i := start; i <= end; i++ {
+		rdb.SAdd(ctx, "available_ports", i)
+	}
+	fmt.Println("Port pool initialized")
+}
+
 func main() {
 	fmt.Println("here starts the creation")
 
@@ -44,5 +66,42 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
+
+	db, err := cosmicmodel.InitializeDB(config)
+	if err != nil {
+		log.Fatalf("Failed to initialize database: %v", err)
+	}
+
+	redisClient, err := cosmicmodel.InitializeRedis(config)
+	if err != nil {
+		log.Fatalf("Failed to initialize Redis: %v", err)
+	}
+	defer redisClient.Close()
+
+	initializePortPool(redisClient, 8081, 8091)
+
+	dbm := cosmicmodel.ModelManager(db, redisClient)
+	handler := handler.HandlerManager(dbm)
+	apis := api.ApiHandler(handler)
+
+	router := setupRouter(apis)
+
+	// Start server
+	server := &http.Server{
+		Addr:         ":" + config.ServerPort,
+		Handler:      router,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+
+	// Start server in a goroutine
+	go func() {
+		log.Printf("Starting server on port %s", config.ServerPort)
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Failed to start server: %v", err)
+		}
+	}()
+
 	fmt.Println(config)
 }
