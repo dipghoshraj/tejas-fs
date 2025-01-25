@@ -22,7 +22,7 @@ type DBM struct {
 	ctx         context.Context
 }
 
-func ModelManager(db *gorm.DB, redisClient *redis.Client, ipPool string) *DBM {
+func ModelManager(db *gorm.DB, redisClient *redis.Client) *DBM {
 	ctx := context.Background()
 
 	if _, err := redisClient.Ping(ctx).Result(); err != nil {
