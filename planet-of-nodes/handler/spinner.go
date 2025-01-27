@@ -25,12 +25,14 @@ func (hm *HManager) SpinUpContainer(node *cosmicmodel.Node) error {
 	node.Status = cosmicmodel.NodeStatusActive
 
 	if err := nodeunit.SpinUpContainer(node.ID, node.VolumeName, node.Capacity, node.Port); err != nil {
-		tx.Rollback()
+		// tx.Rollback()
+		node.Status = cosmicmodel.NodeStatusFailed
 		return fmt.Errorf("failed to update node port: %v", err)
 	}
 
 	if err := tx.Save(node).Error; err != nil {
 		tx.Rollback()
+		fmt.Println("failed to update node port: %w", err)
 		return fmt.Errorf("failed to update node port: %v", err)
 	}
 
@@ -43,8 +45,4 @@ func (hm *HManager) GetAllNodes() ([]cosmicmodel.Node, error) {
 		return nil, err
 	}
 	return nodes, nil
-}
-
-func (hm *HManager) CreateNodesCluster() {
-
 }
