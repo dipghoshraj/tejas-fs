@@ -34,7 +34,7 @@ func (hm *HManager) SpinUpContainer(node *cosmicmodel.Node) error {
 		return fmt.Errorf("failed to update node port: %v", err)
 	}
 
-	return nil
+	return tx.Commit().Error
 }
 
 func (hm *HManager) GetAllNodes() ([]cosmicmodel.Node, error) {
