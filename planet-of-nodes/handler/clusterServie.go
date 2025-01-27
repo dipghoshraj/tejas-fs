@@ -20,7 +20,7 @@ func (hm *HManager) CreateCusterMetadata(cluster *cosmicmodel.Cluster) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	go hm.NodeCreateParallel(ctx, cluster) // runn the node creation in background
 	defer cancel()
-	return nil
+	return tx.Commit().Error
 }
 
 func (hm *HManager) NodeCreateParallel(ctx context.Context, cluster *cosmicmodel.Cluster) error {

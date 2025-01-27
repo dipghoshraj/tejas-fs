@@ -35,7 +35,7 @@ func (na *NApi) CreateCluster(w http.ResponseWriter, r *http.Request) {
 		Nodes:        request.Nodes,
 		NodeCapacity: request.NodeCpacity,
 		AutoScaling:  request.AutoScale,
-		IngressNodes: request.IngressNode,
+		IngressNode:  request.IngressNode,
 	}
 
 	// TODO: Save the cluster metadata and create the cluster in backgroud

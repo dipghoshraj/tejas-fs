@@ -7,7 +7,7 @@ type Cluster struct {
 	NodeCapacity    int64  `json:"nodeCapacity"`
 	TotalCapacity   int64  `json:"totalCapacity"`
 	UsedCapacity    int64  `json:"usedCapacity"`
-	IngressNodes    int64  `json:"ingressNodes"`
+	IngressNode     int64  `json:"ingressNodes"`
 	IngressCapacity int64  `json:"ingressCapacity"`
 	AutoScaling     bool   `json:"autoScaling"`
 }
