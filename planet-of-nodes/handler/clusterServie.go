@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (hm *HManager) CreateCusterMetadata(cluster *cosmicmodel.ClusterConfig) error {
+func (hm *HManager) CreateCusterMetadata(cluster *cosmicmodel.Cluster) error {
 
 	tx := hm.dbm.DB.Begin()
 	if err := tx.Create(cluster).Error; err != nil {
@@ -23,7 +23,7 @@ func (hm *HManager) CreateCusterMetadata(cluster *cosmicmodel.ClusterConfig) err
 	return nil
 }
 
-func (hm *HManager) NodeCreateParallel(ctx context.Context, cluster *cosmicmodel.ClusterConfig) error {
+func (hm *HManager) NodeCreateParallel(ctx context.Context, cluster *cosmicmodel.Cluster) error {
 	var wg sync.WaitGroup
 
 	done := make(chan struct{})

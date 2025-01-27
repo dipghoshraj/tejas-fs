@@ -29,7 +29,7 @@ func (na *NApi) CreateCluster(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cluster_id := uuid.New().String()
-	cluster := &cosmicmodel.ClusterConfig{
+	cluster := &cosmicmodel.Cluster{
 		ID:           cluster_id,
 		Name:         "cluster-" + cluster_id,
 		Nodes:        request.Nodes,
