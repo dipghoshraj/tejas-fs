@@ -39,6 +39,10 @@ func (na *NApi) CreateCluster(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO: Save the cluster metadata and create the cluster in backgroud
+	if err := na.nhm.CreateCusterMetadata(cluster); err != nil {
+		respondError(w, http.StatusBadRequest, "Cluster creation failed")
+		return
+	}
 
 	respondWithJson(w, http.StatusOK, APIResponse{
 		Success: true,

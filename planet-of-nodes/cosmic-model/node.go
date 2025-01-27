@@ -20,7 +20,7 @@ type Node struct {
 	CreatedAt     time.Time  `json:"createdAt"`
 	UpdatedAt     time.Time  `json:"updatedAt"`
 	VolumeName    string     `json:"volumeName"`
-	cluster_id    string     `json:"cluster_id"`
+	Cluster_id    string     `json:"cluster_id"`
 	Port          string     `json:"port"`
 	Host          string     `json:"host"`
 }
