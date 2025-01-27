@@ -1,6 +1,6 @@
 package cosmicmodel
 
-type ClusterConsfig struct {
+type ClusterConfig struct {
 	ID              string `json:"id" gorm:"primaryKey"`
 	Name            string `json:"name"`
 	Nodes           int64  `json:"nodes"`
