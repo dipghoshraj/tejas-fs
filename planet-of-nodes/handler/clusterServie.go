@@ -59,10 +59,10 @@ func (hm *HManager) NodeCreateParallel(ctx context.Context, cluster *cosmicmodel
 		}(iter)
 	}
 
-	go func() {
-		wg.Wait()
-		close(done)
-	}()
+	// go func() {
+	// 	wg.Wait()
+	// 	close(done)
+	// }()
 
 	<-ctx.Done()
 	return fmt.Errorf("cluster spinup errors %v", ctx.Err())

@@ -37,7 +37,7 @@ func loadConfig() (*nodeunt.Config, error) {
 		PostgresPort:     getEnv("POSTGRES_PORT", "5432"),
 		PostgresUser:     getEnv("POSTGRES_USER", "postgres"),
 		PostgresPassword: getEnv("POSTGRES_PASSWORD", ""),
-		PostgresDB:       getEnv("POSTGRES_DB", "cluster-manager"),
+		PostgresDB:       getEnv("POSTGRES_DB", ""),
 		RedisHost:        getEnv("REDIS_HOST", "localhost"),
 		RedisPort:        getEnv("REDIS_PORT", "6379"),
 		RedisPassword:    getEnv("REDIS_PASSWORD", ""),
