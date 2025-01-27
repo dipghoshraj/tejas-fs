@@ -17,7 +17,7 @@ type ClusterRequest struct {
 }
 
 type Response struct {
-	clsuter interface{}
+	Clsuter interface{} `json:"data,omitempty"`
 }
 
 func (na *NApi) CreateCluster(w http.ResponseWriter, r *http.Request) {
@@ -47,7 +47,7 @@ func (na *NApi) CreateCluster(w http.ResponseWriter, r *http.Request) {
 	respondWithJson(w, http.StatusOK, APIResponse{
 		Success: true,
 		Data: Response{
-			clsuter: cluster,
+			Clsuter: cluster,
 		},
 	})
 }

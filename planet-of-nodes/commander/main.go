@@ -6,6 +6,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"planet-of-node/api"
@@ -59,6 +61,31 @@ func initializePortPool(rdb *redis.Client, start, end int) {
 	fmt.Println("Port pool initialized")
 }
 
+func gracefulShutdown(server *http.Server, nodeManager *cosmicmodel.DBM) {
+	// Wait for interrupt signal
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+	<-stop
+
+	log.Println("Shutting down server...")
+
+	// Create shutdown context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	// Attempt graceful shutdown
+	if err := server.Shutdown(ctx); err != nil {
+		log.Printf("Error during server shutdown: %v", err)
+	}
+
+	// Close database connections
+	if sqlDB, err := nodeManager.DB.DB(); err == nil {
+		sqlDB.Close()
+	}
+
+	log.Println("Server stopped")
+}
+
 func main() {
 	fmt.Println("here starts the creation")
 
@@ -104,4 +131,5 @@ func main() {
 	}()
 
 	fmt.Println(config)
+	gracefulShutdown(server, dbm)
 }

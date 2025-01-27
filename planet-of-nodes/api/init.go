@@ -27,7 +27,7 @@ type APIResponse struct {
 
 func SetUpRouter(router *mux.Router, napi *NApi) {
 	router.Use(loggingMiddleware)
-	router.HandleFunc("/cluster", napi.CreateCluster).Methods("POST")
+	router.HandleFunc("/api/cluster", napi.CreateCluster).Methods("POST")
 }
 
 func respondWithJson(w http.ResponseWriter, code int, payload interface{}) {
