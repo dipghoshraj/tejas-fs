@@ -1,0 +1,18 @@
+syntax="proto3";
+
+option go_package = "domain-segment/proto;proto";
+package storage;
+
+service StorageBoxService {
+    rpc HealthCheck(HelloWroldMessage) returns (HelloWroldResponse);
+}
+
+message HelloWroldMessage {
+
+}
+
+message HelloWroldResponse {
+    string status = 1;
+    int64 usedSpace = 2;
+}
+
