@@ -1,9 +1,11 @@
 package dominsegment
 
-// import (
-// 	"house-of-segments/domin-segment/proto"
-// )
+// protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative domin-segment\proto\storage.proto
 
-// type StorageServer struct {
-// 	proto.UnimplementedStorageBoxServiceServer
-// }
+import (
+	"hosue-of-segments/domin-segment/proto"
+)
+
+type StorageServer struct {
+	proto.UnimplementedStorageBoxServiceServer
+}
