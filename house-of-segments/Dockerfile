@@ -20,8 +20,6 @@ RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/
 
 COPY --from=builder /app/grpc-server /usr/local/bin/grpc-server
 
-# Step 10: Expose the port that your gRPC server will be listening on
 EXPOSE 50051
 
-# Step 11: Set the entrypoint to the application
 CMD ["grpc-server"]
