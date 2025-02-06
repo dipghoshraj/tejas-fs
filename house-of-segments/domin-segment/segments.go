@@ -17,21 +17,21 @@ func (s *StorageServer) StoreSegment(stream grpc.ClientStreamingServer[proto.Seg
 		return stream.SendAndClose(&proto.SegmentResponse{Success: false})
 	}
 
-	segName := segments.GetFileid()
+	segName := segments.GetSegmentName()
 	size := int64(0)
 
 	for {
 		segment, err := stream.Recv()
 
 		if err != nil {
-			return fmt.Errorf("%v", err)
-		}
-
-		if err == io.EOF {
 			if file != nil {
 				file.Close()
 			}
-			return stream.SendAndClose(&proto.SegmentResponse{ID: segName, Size: size, Name: segName, Success: true})
+			if err == io.EOF {
+				fmt.Printf("error for %v", err)
+				return stream.SendAndClose(&proto.SegmentResponse{ID: segName, Size: size, Name: segName, Success: true})
+			}
+			return stream.SendAndClose(&proto.SegmentResponse{Success: false})
 		}
 
 		if file == nil {
@@ -44,13 +44,12 @@ func (s *StorageServer) StoreSegment(stream grpc.ClientStreamingServer[proto.Seg
 		}
 
 		_, err = file.Write(segment.GetOrb())
-		fmt.Printf("file chunk size %d", len(segment.GetOrb()))
-
+		fmt.Printf("file chunk size %d \n", len(segment.GetOrb()))
+		size += int64(len(segment.GetOrb()))
 		if err != nil {
 			file.Close()
 			return fmt.Errorf("%v", err)
 		}
-
 	}
 
 }

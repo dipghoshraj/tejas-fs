@@ -20,7 +20,7 @@ message HelloWroldResponse {
 
 message SegmentMessage {
     bytes orb = 1;
-    string fileid = 2;
+    string segmentName = 2;
 }
 
 message SegmentResponse {
