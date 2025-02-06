@@ -19,7 +19,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	StorageBoxService_HealthCheck_FullMethodName = "/storage.StorageBoxService/HealthCheck"
+	StorageBoxService_HealthCheck_FullMethodName  = "/storage.StorageBoxService/HealthCheck"
+	StorageBoxService_StoreSegment_FullMethodName = "/storage.StorageBoxService/StoreSegment"
 )
 
 // StorageBoxServiceClient is the client API for StorageBoxService service.
@@ -27,6 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type StorageBoxServiceClient interface {
 	HealthCheck(ctx context.Context, in *HelloWroldMessage, opts ...grpc.CallOption) (*HelloWroldResponse, error)
+	StoreSegment(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[SegmentMessage, SegmentResponse], error)
 }
 
 type storageBoxServiceClient struct {
@@ -47,11 +49,25 @@ func (c *storageBoxServiceClient) HealthCheck(ctx context.Context, in *HelloWrol
 	return out, nil
 }
 
+func (c *storageBoxServiceClient) StoreSegment(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[SegmentMessage, SegmentResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &StorageBoxService_ServiceDesc.Streams[0], StorageBoxService_StoreSegment_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[SegmentMessage, SegmentResponse]{ClientStream: stream}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type StorageBoxService_StoreSegmentClient = grpc.ClientStreamingClient[SegmentMessage, SegmentResponse]
+
 // StorageBoxServiceServer is the server API for StorageBoxService service.
 // All implementations must embed UnimplementedStorageBoxServiceServer
 // for forward compatibility.
 type StorageBoxServiceServer interface {
 	HealthCheck(context.Context, *HelloWroldMessage) (*HelloWroldResponse, error)
+	StoreSegment(grpc.ClientStreamingServer[SegmentMessage, SegmentResponse]) error
 	mustEmbedUnimplementedStorageBoxServiceServer()
 }
 
@@ -64,6 +80,9 @@ type UnimplementedStorageBoxServiceServer struct{}
 
 func (UnimplementedStorageBoxServiceServer) HealthCheck(context.Context, *HelloWroldMessage) (*HelloWroldResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method HealthCheck not implemented")
+}
+func (UnimplementedStorageBoxServiceServer) StoreSegment(grpc.ClientStreamingServer[SegmentMessage, SegmentResponse]) error {
+	return status.Errorf(codes.Unimplemented, "method StoreSegment not implemented")
 }
 func (UnimplementedStorageBoxServiceServer) mustEmbedUnimplementedStorageBoxServiceServer() {}
 func (UnimplementedStorageBoxServiceServer) testEmbeddedByValue()                           {}
@@ -104,6 +123,13 @@ func _StorageBoxService_HealthCheck_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _StorageBoxService_StoreSegment_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(StorageBoxServiceServer).StoreSegment(&grpc.GenericServerStream[SegmentMessage, SegmentResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type StorageBoxService_StoreSegmentServer = grpc.ClientStreamingServer[SegmentMessage, SegmentResponse]
+
 // StorageBoxService_ServiceDesc is the grpc.ServiceDesc for StorageBoxService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -116,6 +142,12 @@ var StorageBoxService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _StorageBoxService_HealthCheck_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "StoreSegment",
+			Handler:       _StorageBoxService_StoreSegment_Handler,
+			ClientStreams: true,
+		},
+	},
 	Metadata: "domin-segment/proto/storage.proto",
 }

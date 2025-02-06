@@ -5,6 +5,7 @@ package storage;
 
 service StorageBoxService {
     rpc HealthCheck(HelloWroldMessage) returns (HelloWroldResponse);
+    rpc StoreSegment(stream SegmentMessage) returns (SegmentResponse);
 }
 
 message HelloWroldMessage {
@@ -16,3 +17,15 @@ message HelloWroldResponse {
     int64 usedSpace = 2;
 }
 
+
+message SegmentMessage {
+    bytes orb = 1;
+    string fileid = 2;
+}
+
+message SegmentResponse {
+    string ID = 1;
+    string Name= 2;
+    int64 Size= 3;
+    bool success = 4;
+}
