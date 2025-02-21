@@ -1,14 +1,17 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"hosue-of-segments/domin-segment/proto"
+	"hosue-of-segments/monitor"
 
 	domainsegment "hosue-of-segments/domin-segment"
 
@@ -27,6 +30,34 @@ func gracefulShutdown(server *grpc.Server) {
 	// Attempt graceful shutdown
 	server.Stop()
 
+}
+
+func periodicalHealthCheck(ctx context.Context) {
+
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	broker := []string{"localhost:9092"}
+	producer, err := monitor.NewProducer(broker)
+	if err != nil {
+		log.Fatalf("Error creating producer: %v", err)
+	}
+	defer producer.Close()
+
+	// 	// Start an infinite loop that calls the API every time the ticker ticks
+	for {
+		select {
+		case <-ticker.C:
+			err = producer.SendMessage()
+			if err != nil {
+				log.Printf("Error sending message: %v", err)
+			}
+
+		case <-ctx.Done():
+			log.Println("Shutting down health check...")
+			return
+		}
+	}
 }
 
 func main() {
@@ -50,6 +81,10 @@ func main() {
 			log.Fatalf("failed to serve: %v", err)
 		}
 	}()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go periodicalHealthCheck(ctx)
 
 	gracefulShutdown(s)
 }
