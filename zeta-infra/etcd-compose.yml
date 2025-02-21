@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  etcd:
+    image: quay.io/coreos/etcd:latest
+    container_name: etcd
+    ports:
+      - "2379:2379"  # Client port
+      - "2380:2380"  # Peer port
+    volumes:
+      - etcd-data:/etcd-data
+    command:
+      - etcd
+      - --name=my-etcd-node
+      - --data-dir=/etcd-data
+      - --listen-client-urls=http://0.0.0.0:2379
+      - --advertise-client-urls=http://0.0.0.0:2379
+    environment:
+      - ETCDCTL_API=3  # Ensures compatibility with etcdctl v3
+
+volumes:
+  etcd-data:
