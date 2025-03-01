@@ -2,6 +2,7 @@ package main
 
 import (
 	"app-gateway/graph"
+	resolverService "app-gateway/resolver-service"
 	"log"
 	"net/http"
 	"os"
@@ -22,7 +23,7 @@ func main() {
 		port = defaultPort
 	}
 
-	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{}}))
+	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: &resolverService.Resolver{}}))
 
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})

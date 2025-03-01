@@ -1,4 +1,4 @@
-package graph
+package resolverService
 
 // This file will not be regenerated automatically.
 //
