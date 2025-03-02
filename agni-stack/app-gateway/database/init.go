@@ -10,7 +10,8 @@ import (
 
 var DB *gorm.DB
 
-func Init() {
+func InitDb() {
+
 	dsn := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
 		getEnv("DB_HOST", "localhost"),
@@ -24,8 +25,9 @@ func Init() {
 	if err != nil {
 		panic(err)
 	}
+
 	DB = db
-	fmt.Println("Database connected")
+	fmt.Printf("Database connection established")
 }
 
 func getEnv(key, fallback string) string {

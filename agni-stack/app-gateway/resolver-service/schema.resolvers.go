@@ -7,21 +7,61 @@ package resolverService
 import (
 	"app-gateway/graph"
 	"app-gateway/graph/model"
+	service "app-gateway/resolver-service/resolver"
 	"context"
 	"fmt"
+	"strconv"
 )
 
 // CreateUser is the resolver for the createUser field.
 func (r *mutationResolver) CreateUser(ctx context.Context, input model.UserInput) (*model.User, error) {
-	panic(fmt.Errorf("not implemented: CreateUser - createUser"))
+	user, err := service.CreateUser(ctx, input)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.User{
+		ID:    strconv.FormatInt(user.ID, 10),
+		Name:  user.Name,
+		Email: user.Email,
+	}, nil
 }
 
 // Login is the resolver for the login field.
-func (r *mutationResolver) Login(ctx context.Context, email string, password string) (string, error) {
-	panic(fmt.Errorf("not implemented: Login - login"))
+func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (string, error) {
+	token, err := service.LoginUser(ctx, input)
+	if err != nil {
+		return "", err
+	}
+	return token, nil
+}
+
+// MyDetails is the resolver for the myDetails field.
+func (r *queryResolver) MyDetails(ctx context.Context) (*model.User, error) {
+	userID, ok := ctx.Value("user_id").(float64)
+	if !ok || userID == 0 {
+		return nil, fmt.Errorf("missing user ID")
+	}
+
+	user, err := service.GetUser(ctx, int64(userID))
+	if err != nil {
+		return nil, err
+	}
+
+	userdata := &model.User{
+		ID:    strconv.FormatInt(user.ID, 10),
+		Name:  user.Name,
+		Email: user.Email,
+	}
+
+	return userdata, nil
 }
 
 // Mutation returns graph.MutationResolver implementation.
 func (r *Resolver) Mutation() graph.MutationResolver { return &mutationResolver{r} }
 
+// Query returns graph.QueryResolver implementation.
+func (r *Resolver) Query() graph.QueryResolver { return &queryResolver{r} }
+
 type mutationResolver struct{ *Resolver }
+type queryResolver struct{ *Resolver }
