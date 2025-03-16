@@ -20,4 +20,6 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
 
-# docker exec -it 316e8c88b1a7 /opt/kafka/bin/kafka-topics.sh --create --zookeeper zookeeper:2181 --replication-factor 1 --partitions 1 --topic clusters
+# docker exec -it 3465f2566b9d /opt/kafka/bin/kafka-topics.sh --create --zookeeper zookeeper:2181 --replication-factor 1 --partitions 1 --topic nodeTopic
+# docker exec -it 3465f2566b9d /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9093 --topic nodeTopic --from-beginning
+# docker exec -it 3465f2566b9d kafka-console-producer --broker-list localhost:9093 --topic <your-topic>
