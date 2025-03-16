@@ -1,0 +1,15 @@
+# GraphQL schema example
+#
+# https://gqlgen.com/getting-started/
+
+# schema/schema.graphql
+
+directive @auth on FIELD_DEFINITION
+
+type Query {
+  _empty: String # Placeholder field (required if Query is empty)
+}
+
+type Mutation {
+  _empty: String # Placeholder field (required if Mutation is empty)
+}

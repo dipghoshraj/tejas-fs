@@ -2,27 +2,43 @@ package main
 
 import (
 	"app-gateway/graph"
+	repository "app-gateway/repository"
+	"app-gateway/repository/database"
+	resolverService "app-gateway/resolver-service"
 	"log"
 	"net/http"
 	"os"
+
+	"app-gateway/directives"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
 	"github.com/99designs/gqlgen/graphql/handler/lru"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/joho/godotenv"
 	"github.com/vektah/gqlparser/v2/ast"
 )
 
 const defaultPort = "8080"
 
 func main() {
+
+	godotenv.Load()
+	database.InitDb()
+	database.MigrateDB()
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = defaultPort
 	}
 
-	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{}}))
+	repository.InitRepositoryManager()
+
+	config := graph.Config{Resolvers: &resolverService.Resolver{}}
+	config.Directives.Auth = directives.AuthDirective
+
+	srv := handler.New(graph.NewExecutableSchema(config))
 
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
