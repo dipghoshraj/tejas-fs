@@ -4,10 +4,15 @@ import (
 	graphmodel "app-gateway/graph/model"
 	repository "app-gateway/repository"
 	dbmodel "app-gateway/repository/model"
+	"app-gateway/utils"
 
 	"context"
 	"strconv"
 )
+
+/* Need to use transcation for the app creation as
+this has a external request dependencies with
+it. */
 
 func CreateApp(ctx context.Context, input graphmodel.AppInput) (*graphmodel.App, error) {
 	app, err := repository.GetRepositoryManager().AppRepo.CreateApp(ctx, input)
@@ -15,8 +20,29 @@ func CreateApp(ctx context.Context, input graphmodel.AppInput) (*graphmodel.App,
 		return nil, err
 	}
 
+	err = kafkaMessage(*app)
+	if err != nil {
+		return nil, err
+	}
+
 	graphApp := mapApp(app)
 	return graphApp, nil
+}
+
+func kafkaMessage(app dbmodel.App) error {
+	message := map[string]string{
+		"nodeApp":   app.Name,
+		"nodeImage": app.Image,
+	}
+
+	producer := utils.NewProducer()
+	err := producer.PushMessage(message)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func GetApps(ctx context.Context) ([]*graphmodel.App, error) {
