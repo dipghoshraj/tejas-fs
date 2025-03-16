@@ -1,8 +1,9 @@
 package main
 
 import (
-	"app-gateway/database"
 	"app-gateway/graph"
+	repository "app-gateway/repository"
+	"app-gateway/repository/database"
 	resolverService "app-gateway/resolver-service"
 	"log"
 	"net/http"
@@ -25,12 +26,14 @@ func main() {
 
 	godotenv.Load()
 	database.InitDb()
-	// database.MigrateDB()
+	database.MigrateDB()
 
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = defaultPort
 	}
+
+	repository.InitRepositoryManager()
 
 	config := graph.Config{Resolvers: &resolverService.Resolver{}}
 	config.Directives.Auth = directives.AuthDirective

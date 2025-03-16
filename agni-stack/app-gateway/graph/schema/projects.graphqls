@@ -1,0 +1,28 @@
+
+type Project {
+  id: ID!
+  name: String!
+  description: String!
+  owner: BasicUser
+  apps: [BasicApp!]!
+}
+
+input ProjectInput {
+  name: String!
+  description: String
+}
+
+type BasicUser {
+  id: ID!
+  name: String!
+  email: String!
+}
+
+extend type Query {
+  projects: [Project!]! @auth
+  project(id: ID!): Project! @auth
+}
+
+extend type Mutation {
+  createProject(input: ProjectInput!): Project! @auth
+}

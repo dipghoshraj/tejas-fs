@@ -5,11 +5,12 @@ go 1.23.0
 toolchain go1.23.6
 
 require (
-	github.com/99designs/gqlgen v0.17.66
+	github.com/99designs/gqlgen v0.17.68
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/joho/godotenv v1.5.1
-	github.com/vektah/gqlparser/v2 v2.5.22
+	github.com/vektah/gqlparser/v2 v2.5.23
 	golang.org/x/crypto v0.35.0
+	golang.org/x/text v0.23.0
 	gorm.io/driver/postgres v1.5.11
 )
 
@@ -20,10 +21,7 @@ require (
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
-	golang.org/x/crypto v0.35.0 // indirect
-	golang.org/x/sync v0.11.0 // indirect
-	golang.org/x/text v0.22.0 // indirect
-	gorm.io/driver/postgres v1.5.11 // indirect
+	golang.org/x/sync v0.12.0 // indirect
 )
 
 require (
