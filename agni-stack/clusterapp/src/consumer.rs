@@ -1,8 +1,7 @@
-use log::info;
 use crate::config::ConsumerConfig;
 use crate::shutdown::shutdown_signal;
 use crate::process::process_message;
-use rdkafka::consumer::StreamConsumer;
+use rdkafka::consumer::{Consumer, StreamConsumer};
 use tokio::time::{sleep, Duration};
 use tokio::sync::{mpsc, Mutex};
 use std::sync::Arc;
@@ -35,12 +34,13 @@ fn spawn_consumer_thread(rx : Arc<Mutex<mpsc::Receiver<String>>>) {
         let rx = rx.clone();
         tokio::spawn(async move {
             loop {
-                let mut locked_rx = rx.try_lock().unwrap();
-                if let Some(message) = locked_rx.recv().await {
-                    drop(locked_rx); // Release lock early
-                    process_message(&message).await;
+                if let Ok(mut locked_rx) = rx.try_lock() {
+                    if let Some(message) = locked_rx.recv().await {
+                        drop(locked_rx); // Release lock early
+                        process_message(&message).await;
+                    }
                 } else {
-                    break;
+                    sleep(Duration::from_millis(10)).await; // Prevent busy looping
                 }
             }
         });
@@ -61,28 +61,28 @@ async fn consume_message(consumer: StreamConsumer,
                         let payload = match msg.payload_view::<str>() {
                             Some(Ok(s)) => s.to_string(),
                             Some(Err(e)) => {
-                                eprintln!("Error while deserializing message payload: {:?}", e);
+                                println!("Error while deserializing message payload: {:?}", e);
                                 return;
                             }
                             None => {
-                                eprintln!("Error while deserializing message payload");
+                                println!("Error while deserializing message payload");
                                 return;
                             }
                         };
                         tx.send(payload).await.unwrap();
                     }
                     Some(Err(e)) => {
-                        eprintln!("Error while receiving from Kafka: {:?}", e);
+                        println!("Error while receiving from Kafka: {:?}", e);
                         sleep(BACKOFF_DELAY).await; // Backoff on error
                     }
                     None => {
-                        eprintln!("Stream terminated");
+                        println!("Stream terminated");
                         return;
                     }
                 }
             }
             _ = shutdown => {
-                info!("Shutting down consumer");
+                println!("Shutting down consumer");
                 return;
             }
         }
@@ -92,6 +92,11 @@ async fn consume_message(consumer: StreamConsumer,
 pub async fn start_consumer(config: ConsumerConfig) {
 
     let consumer = create_consumer(&config);
+    consumer
+        .subscribe(&[&config.topic])
+        .expect("Failed to subscribe to Kafka topic");
+
+
     let (tx, rx) = mpsc::channel::<String>(MAX_CONCURRENT_TASKS * 2);
     let rx = Arc::new(Mutex::new(rx));
 
