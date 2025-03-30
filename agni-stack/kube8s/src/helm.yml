@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: appname-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: appname
+  template:
+    metadata:
+      labels:
+        app: appname
+    spec:
+      containers:
+      - name: appname-container
+        image: user/appname:latest # This should be dynamically set from Kafka
+        ports:
+        - containerPort: 80
