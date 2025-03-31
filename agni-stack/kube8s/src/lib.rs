@@ -8,12 +8,9 @@ use k8s::service::create_service;
 pub async fn deploy_app(
     appname: &str,
     image: &str,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), String> {
     // Deploy the application
     println!("Hello, world!");
-
-    let appname = "myapp";
-    let image = "dipghoshraj/omnia-ar-app:0.0.7";
     
     let result = deployk8s(appname, image).await;
     match result {
@@ -25,13 +22,16 @@ pub async fn deploy_app(
                     println!("Service created successfully");
                     let result = create_ingress(appname, "myapp.example.com").await;
                     match result {
-                        Ok(_) => println!("Ingress created successfully"),
-                        Err(e) => eprintln!("Error creating ingress: {}", e),
+                        Ok(_) => {
+                            println!("Ingress created successfully");
+                            Ok(())
+                        },
+                        Err(e) => Err(format!("Error creating ingress: {}", e)),
                     }
                 }
-                Err(e) => eprintln!("Error creating service: {}", e),
+                Err(e) =>Err(format!("Error creating service: {}", e)),
             }
         },
-        Err(e) => eprintln!("Error deploying: {}", e),
+        Err(e) => Err(format!("Error deploying: {}", e)),
     }
 }
