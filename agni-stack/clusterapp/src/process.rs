@@ -1,6 +1,6 @@
 use log::info;
 use tokio::time::{sleep, Duration};
-
+use kube8s::deploy_app;
 
 pub async fn process_message(message: String) {
     // info!("Processing message: {}", message);
