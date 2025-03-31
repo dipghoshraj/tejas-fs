@@ -11,6 +11,7 @@ async fn main() {
 
     let appname = "myapp";
     let image = "dipghoshraj/omnia-ar-app:0.0.7";
+    
     let result = deployk8s(appname, image).await;
     match result {
         Ok(_) => {
