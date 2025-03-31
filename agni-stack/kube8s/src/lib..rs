@@ -5,8 +5,11 @@ use k8s::network::create_ingress;
 use k8s::service::create_service;
 
 
-#[tokio::main]
-async fn main() {
+pub async fn deploy_app(
+    appname: &str,
+    image: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    // Deploy the application
     println!("Hello, world!");
 
     let appname = "myapp";
