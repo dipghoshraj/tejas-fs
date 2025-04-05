@@ -1033,7 +1033,7 @@ dependencies = [
 [[package]]
 name = "kube8s"
 version = "0.1.0"
-source = "git+https://github.com/dipghoshraj/media-service.git#6e6931477adcfb29db790a090178e90597eefaea"
+source = "git+https://github.com/dipghoshraj/media-service.git?branch=AGNI-002-1#72c28ee37736fdd2c5ce99524d00171068cc6731"
 dependencies = [
  "k8s-openapi",
  "kube",
