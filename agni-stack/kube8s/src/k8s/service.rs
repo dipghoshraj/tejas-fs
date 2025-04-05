@@ -4,12 +4,11 @@ use kube::{
     Client,
 };
 use serde_json::json;
-use std::error::Error;
 
 pub async fn create_service(
     appname: &str,
     target_port: i32,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
     let client = Client::try_default().await?;
     let services: Api<Service> = Api::namespaced(client, "default");
 

@@ -8,7 +8,7 @@ use kube::{
 use k8s_openapi::api::apps::v1::Deployment;
 use serde_json::json;
 
-pub async fn deployk8s (appname: &str, image: &str) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn deployk8s (appname: &str, image: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
     let client = Client::try_default().await.unwrap();
     let deployments: Api<Deployment> = Api::namespaced(client, "default");
 

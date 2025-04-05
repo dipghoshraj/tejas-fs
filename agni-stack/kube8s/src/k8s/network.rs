@@ -9,7 +9,7 @@ use serde_json::json;
 pub async fn create_ingress(
     appname: &str,
     host: &str,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
     let client = Client::try_default().await.unwrap();
     let ingresses: Api<Ingress> = Api::namespaced(client, "default");
 
