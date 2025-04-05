@@ -39,8 +39,10 @@ fn spawn_consumer_thread(rx : Arc<Mutex<mpsc::Receiver<String>>>) {
                 if let Ok(mut locked_rx) = rx.try_lock() {
                     if let Some(message) = locked_rx.recv().await {
                         drop(locked_rx); // Release lock early
-                        process_message(message).await;
-
+                        let result = process_message(message).await;
+                        if let Err(e) = result {
+                            eprintln!("Error: {}", e); // io::Error is Send
+                        }
                     }
                 } else {
                     sleep(Duration::from_millis(10)).await; // Prevent busy looping
