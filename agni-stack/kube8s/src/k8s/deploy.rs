@@ -1,7 +1,7 @@
 
 
 use kube::{
-    api::{Api, PostParams},
+    api::{Api, Patch, PatchParams},
     Client
 };
 
@@ -11,6 +11,9 @@ use serde_json::json;
 pub async fn deployk8s (appname: &str, image: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
     let client = Client::try_default().await.unwrap();
     let deployments: Api<Deployment> = Api::namespaced(client, "default");
+    let controller = format!("{}-deployer", appname);
+    let patch_params  = PatchParams::apply(&controller).force();
+
 
     let deployment = json!({
         "apiVersion": "apps/v1",
@@ -39,7 +42,9 @@ pub async fn deployk8s (appname: &str, image: &str) -> Result<(), Box<dyn std::e
     });
 
     let deploy: Deployment = serde_json::from_value(deployment)?;
-    deployments.create(&PostParams::default(), &deploy).await?;
+    let patch = Patch::Apply(deploy);
+
+    deployments.patch(appname, &patch_params, &patch).await?;
 
     println!("✅ Successfully deployed {}", appname);
     Ok(())
