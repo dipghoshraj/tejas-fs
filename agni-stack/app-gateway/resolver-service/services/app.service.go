@@ -31,8 +31,8 @@ func CreateApp(ctx context.Context, input graphmodel.AppInput) (*graphmodel.App,
 
 func kafkaMessage(app dbmodel.App) error {
 	message := map[string]string{
-		"nodeApp":   app.Name,
-		"nodeImage": app.Image,
+		"app_name": app.Name,
+		"image":    app.Image,
 	}
 
 	producer := utils.NewProducer()
