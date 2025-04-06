@@ -46,6 +46,6 @@ pub async fn deployk8s (appname: &str, image: &str) -> Result<(), Box<dyn std::e
 
     deployments.patch(appname, &patch_params, &patch).await?;
 
-    println!("✅ Successfully deployed {}", appname);
+    println!("✅ Successfully create the deployment {}", appname);
     Ok(())
 }
