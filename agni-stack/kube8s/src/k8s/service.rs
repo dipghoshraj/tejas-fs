@@ -1,17 +1,19 @@
 use k8s_openapi::api::core::v1::Service;
 use kube::{
-    api::{Api, PostParams},
+    api::{Api, PatchParams, Patch},
     Client,
 };
 use serde_json::json;
-use std::error::Error;
 
 pub async fn create_service(
     appname: &str,
     target_port: i32,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
     let client = Client::try_default().await?;
     let services: Api<Service> = Api::namespaced(client, "default");
+    let controller = format!("{}-deployer", appname);
+    let patch_params  = PatchParams::apply(&controller).force();
+
 
     let service = json!({
         "apiVersion": "v1",
@@ -31,7 +33,9 @@ pub async fn create_service(
     });
 
     let service: Service = serde_json::from_value(service)?;
-    services.create(&PostParams::default(), &service).await?;
+    let patch = Patch::Apply(service);
+
+    services.patch(appname,&patch_params, &patch).await?;
 
     println!("✅ Successfully created service for {}", appname);
     Ok(())

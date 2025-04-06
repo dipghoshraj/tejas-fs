@@ -8,7 +8,7 @@ use k8s::service::create_service;
 pub async fn deploy_app(
     appname: &str,
     image: &str,
-) -> Result<(), String> {
+) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
     // Deploy the application
     println!("Hello, world!");
     
@@ -19,19 +19,20 @@ pub async fn deploy_app(
             let result = create_service(appname, 80).await;
             match result {
                 Ok(_) => {
-                    println!("Service created successfully");
+                    println!("Service created successfully");                    
                     let result = create_ingress(appname, "myapp.example.com").await;
                     match result {
                         Ok(_) => {
                             println!("Ingress created successfully");
                             Ok(())
                         },
-                        Err(e) => Err(format!("Error creating ingress: {}", e)),
+                        Err(e) => Err(e as Box<dyn std::error::Error + Send + Sync + 'static>),
                     }
                 }
-                Err(e) =>Err(format!("Error creating service: {}", e)),
+                Err(e) =>Err(e as Box<dyn std::error::Error + Send + Sync + 'static>),
             }
         },
-        Err(e) => Err(format!("Error deploying: {}", e)),
+        Err(e) => Err(e as Box<dyn std::error::Error + Send + Sync + 'static>),
+
     }
-}
+}      

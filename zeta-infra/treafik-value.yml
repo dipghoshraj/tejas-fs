@@ -1,0 +1,68 @@
+entrypoint:
+  web:
+    address: ":80"
+  websecure:
+    address: ":443"
+
+
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: dipghoshraj@gmail.com
+      storage: "/acme.json"
+      caServer: "https://acme-staging-v02.api.letsencrypt.org/directory"
+      httpChallenge:
+        entryPoint: web
+        # Uncomment the following line to use a specific domain for the challenge
+        # config:
+        #   domains:
+        #     - "example.com"
+      # Uncomment the following line to enable DNS challenge
+      # dnsChallenge:
+      #   provider: "cloudflare"
+      #   delayBeforeCheck: 0
+
+additionalArguments:
+  - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+  - "--certificatesresolvers.letsencrypt.acme.email={{ .Values.traefik.email }}"
+  - "--certificatesresolvers.letsencrypt.acme.storage=/data/acme.json"
+
+
+persistence:
+  enabled: true
+  name: traefik-cert-storage
+  storageClass: "standard"
+  accessModes:
+    - ReadWriteOnce
+  size: 1Gi
+  path: /data
+
+
+services:
+  type: NodePort
+  enabled: true
+  ports:
+    web:
+      enabled: true
+      port: 80
+      targetPort: 80
+      nodePort: 30080
+    websecure:
+      enabled: true
+      port: 443
+      targetPort: 443
+      nodePort: 30443
+
+
+dashboard:
+  enabled: true
+  # domain: traefik.{{ .Values.cluster.domain }}
+  domain: traefik.agnistack.online
+  ingressClassName: traefik
+  # annotations:
+  #   kubernetes.io/ingress.class: traefik
+  #   kubernetes.io/tls-acme: "true"
+  #   traefik.ingress.kubernetes.io/router.entrypoints: websecure
+  #   traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt
+  #   traefik.ingress.kubernetes.io/router.tls.domains[0].main: "{{ .Values.cluster.domain }}"
+  #   traefik.ingress.kubernetes.io/router.tls.domains[0].sans: "*.{{ .Values.cluster.domain }}"
